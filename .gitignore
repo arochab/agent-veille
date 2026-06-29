@@ -1,0 +1,24 @@
+# === DONNÉES SENSIBLES — JAMAIS sur GitHub ===
+# Carte des projets d'Adam, stratégie, signaux : restent locaux / régénérés par la routine.
+data/
+briefs/
+
+# Secrets éventuels
+*.env
+.env*
+secret*
+*secret*
+*.key
+*token*
+config.local.*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS
+desktop.ini
+.DS_Store
+Thumbs.db
