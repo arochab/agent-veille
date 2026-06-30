@@ -1,7 +1,16 @@
 # === DONNÉES SENSIBLES — JAMAIS sur GitHub ===
 # Carte des projets d'Adam, stratégie, signaux : restent locaux / régénérés par la routine.
-data/
+data/*
 briefs/
+# EXCEPTION : la coquille PWA publique a besoin de la démo (zéro donnée réelle).
+# Le vrai radar (data/radar.json) reste bloqué par 'data/*' ci-dessus.
+!data/radar.demo.json
+# Garde-fou explicite : ne JAMAIS suivre le vrai radar (stratégie) ni l'atelier.
+data/radar.json
+data/atelier.json
+data/signaux_frais.json
+data/vu.json
+data/_pour_analyse.json
 
 # Secrets éventuels
 *.env
@@ -22,3 +31,4 @@ venv/
 desktop.ini
 .DS_Store
 Thumbs.db
+.claude/

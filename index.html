@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Veille — daily radar</title>
+<meta name="theme-color" content="#F0EEE6" />
+<link rel="manifest" href="pwa/manifest.json" />
+<link rel="apple-touch-icon" href="pwa/icon-192.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css" />
+<link rel="stylesheet" href="pwa/styles.css" />
+</head>
+<body>
+<div id="app">
+  <header class="hdr">
+    <div class="hdr-row">
+      <span class="hdr-title"><i class="ti ti-radar-2"></i> Daily radar</span>
+      <span class="hdr-date" id="date">—</span>
+    </div>
+    <p class="headline" id="headline">Loading your watch…</p>
+    <div class="stats" id="stats"></div>
+  </header>
+  <main id="moves"></main>
+  <section class="skill" id="skill" hidden>
+    <div class="skill-label"><i class="ti ti-school"></i> Skill up this week</div>
+    <p id="skill-text"></p>
+  </section>
+  <footer class="foot" id="foot"></footer>
+</div>
+<script src="pwa/config.js"></script>
+<script src="pwa/app.js"></script>
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.v1.js").catch(function(){});
+}
+</script>
+</body>
+</html>

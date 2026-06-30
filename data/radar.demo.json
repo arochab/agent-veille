@@ -1,0 +1,42 @@
+{
+  "date": "2026-06-29",
+  "headline": "Two of your assets (BrandPulse, Claude Eats Tokens) are being cloned this week by 0-3 star repos. Same lesson: measure then ship the fix. Rivals only measure. That's your edge.",
+  "moves": [
+    {
+      "rank": "star",
+      "projet": "BrandPulse",
+      "ramp": "blue",
+      "icone": "ti-target",
+      "meta": "~2h · High gain · cash now",
+      "title": "Turn your free checker into a paid 290€ report",
+      "intro": "BrandPulse already does 80% of this (generate_report.py + index.html are live). You add a fix-list + a price, not a rebuild.",
+      "steps": [
+        { "t": "Add a 'fix list' to the report", "how": "Paste into Claude Code:", "paste": "In generate_report.py, add a section 'Top 3 fixes to get cited by AI' — per missing query: the gap + one concrete action (schema / content / entity). Keep my existing style.", "done": "report.html shows 3 fixes under the score" },
+        { "t": "Put a price on the landing", "how": "Add one line under the headline in index.html:", "paste": "Free score in 60s. Full report + fix plan: 290€ — delivered in 48h.", "done": "price is live on brandpulse-app.onrender.com" },
+        { "t": "Get 1 buyer signal (no code)", "how": "Run BrandPulse on 3 FR B2B brands, DM each founder (swap [X]):", "paste": "J'ai checké la visibilité de [X] dans ChatGPT vs vos concurrents — voici le rapport. Le plan de correction, je le fais pour 290€. Ça vous intéresse ?", "done": "3 DMs sent · 1 reply = validated" }
+      ],
+      "unlocks": "1 paying client → 79€/mo monitoring (recurring = the real money).",
+      "miss": "Profound/Peec only measure. You ship the fix (you generate code). Lead with it.",
+      "cross": "Same 'measure → fix' playbook powers the Claude Eats Tokens move. Build it once, reuse twice."
+    },
+    {
+      "rank": "2",
+      "projet": "Claude Eats Tokens",
+      "ramp": "teal",
+      "icone": "ti-coins",
+      "meta": "A few days · High gain",
+      "title": "Pick the ONE wedge the 3 clones don't have",
+      "intro": "3 trackers shipped in 8 days. Don't match features — take the angle they're weak on: forecasting.",
+      "steps": [
+        { "t": "Study the leader's math", "how": "Open cctally's README, copy its cost-per-percent formula into a note.", "paste": "", "done": "you can state in 1 sentence how cctally computes cost — and where it's loose" },
+        { "t": "Write your wedge on the landing", "how": "Add to index.html (PWA):", "paste": "Know if you can keep going — before you hit the limit. Forecasts your 5h window, not just past spend.", "done": "the forecast promise is the H1 on your PWA" },
+        { "t": "Post the cost-expert angle", "how": "One LinkedIn post. Hook:", "paste": "The hidden cost of Claude Code: most devs can't see it until the limit hits. Here's how I forecast mine →", "done": "1 post live, links to your PWA" }
+      ],
+      "unlocks": "Reframes you from 'made a tracker' to 'I quantify LLM cost' — a hireable skill.",
+      "miss": "All 3 clones report the past. None forecast the future window. Forecasting is the wedge.",
+      "cross": ""
+    }
+  ],
+  "skill_up": "GEO (Generative Engine Optimization = how a brand shows up inside AI answers). 1h on the 'best GEO tools 2026' list + one demo, then write one paragraph defining it. Upgrades your pitch and your CV at once.",
+  "stats": { "fresh": 2, "cut": 9, "demo": true }
+}
