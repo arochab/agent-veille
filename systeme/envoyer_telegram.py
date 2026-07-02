@@ -283,6 +283,13 @@ def _detail_move(m: dict) -> list:
     if m.get("pourquoi_maintenant"):
         out.append(f"<b>Pourquoi maintenant :</b> {esc(m['pourquoi_maintenant'])}")
         out.append("")
+    if m.get("insight"):
+        # La lecture STRATEGIQUE du move (champ optionnel, exige pour le move star
+        # par prompt_analyse_auto.md) : ce que le fait IMPLIQUE, jamais sa repetition.
+        # Tronque a 160 en dur (garde-fou deterministe : la spec SPEC-INSIGHT-2B
+        # limite a 160, le jury ne scanne pas encore ce champ).
+        out.append(f"<i>💡 {esc(str(m['insight'])[:160])}</i>")
+        out.append("")
     if m.get("do_now"):
         out.append("<b>👉 Fais ça maintenant :</b>")
         out.append(esc(m["do_now"]))

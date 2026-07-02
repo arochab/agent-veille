@@ -52,7 +52,7 @@ ATTENDUS = {
 # (verifier) et affichee en avertissement (main). Re-signature : --signer.
 SENTINELLES = {
     "executer_move.py": "942ce5ff3e8ff986686fdac8034ef4f95eeaf6f76fb4d382a9272b160c10885e",
-    "envoyer_telegram.py": "6411d2d32e2a0a8b8be6d5c40d9e22d2011a1fe62d96888c8a30c51530ac8285",
+    "envoyer_telegram.py": "80ce142b0d00f44dc99872684c0af2bb3219735ce4333e16071b96a5c7b99517",
     "collecte_signaux.py": "23aa79b05c1be28e921aa3dd2defbcbb95cfb93d3b8c1ecbf3601dd072693ea0",
     "suivi_go.py": "18663d703e50891bec30ca04697b8dd1b2fbe7355435832072b1985a810f2ab5",
     "digest_roi.py": "78d7b73fe5e895946f0ea8900f0975edfabefd75ff6a44aa19561f126e4792ef",

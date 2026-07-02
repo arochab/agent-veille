@@ -1,12 +1,17 @@
-/* Service worker v1 — Veille PWA.
-   Network-first sur l'app-shell (toujours la dernière version), network-ONLY sur
-   les données (data/radar*.json — jamais servir un radar périmé depuis le cache).
+/* Service worker — Veille PWA.
+   Network-first PARTOUT : app-shell ET données (data/radar*.json). En ligne, le
+   radar est donc toujours frais ; hors-ligne UNIQUEMENT, on ressert la dernière
+   version en cache (mieux qu'un écran cassé — la date affichée dit son âge).
    Purge tout cache != version courante à l'activation. Calqué sur Claude Eats Tokens. */
-const CACHE = "veille-v1";
+const CACHE = "veille-v2"; // v2 : refonte The Wire (design-system.css, logo, démo précachée)
 const ASSETS = [
   "./", "./index.html",
-  "./pwa/app.js", "./pwa/config.js", "./pwa/styles.css",
-  "./pwa/manifest.json", "./pwa/icon-192.png", "./pwa/icon-512.png"
+  "./pwa/app.js", "./pwa/config.js", "./pwa/design-system.css",
+  "./pwa/manifest.json", "./pwa/icon-192.png", "./pwa/icon-512.png",
+  "./assets/the-wire-logo.png",
+  // radar.demo.json est précaché : hors-ligne au premier lancement, la démo
+  // s'affiche quand même (le fetch réseau reste prioritaire — jamais périmé en ligne).
+  "./data/radar.demo.json"
 ];
 
 self.addEventListener("install", (e) => {
@@ -28,7 +33,7 @@ function isData(url) {
 self.addEventListener("fetch", (e) => {
   const url = e.request.url;
   if (isData(url)) {
-    // network-only : le radar doit toujours être frais
+    // network-first : frais en ligne, repli cache hors-ligne uniquement
     e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
     return;
   }

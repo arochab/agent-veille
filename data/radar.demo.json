@@ -9,6 +9,7 @@
       "meta": "~2h · gros gain · cash tout de suite",
       "title": "Gagne ~290€ : ton app BrandPulse peut déjà vendre ce rapport, il manque juste un prix",
       "pourquoi_maintenant": "3 repos ont copié l'idée cette semaine, mais aucun ne facture le rapport. La demande existe, l'offre payante non.",
+      "insight": "Pari : le premier qui affiche un prix rafle les demandes — une page de vente suffit pour tester si ça paie, sans coder.",
       "do_now": "Ajoute cette ligne sous le titre de brandpulse-app.onrender.com (fichier index.html) : « Rapport complet + plan de correction : 290€, livré en 48h. »",
       "steps": [
         { "t": "Mets un prix sur la page", "how": "Ajoute une ligne sous le titre dans index.html :", "paste": "Score gratuit en 60s. Rapport complet + plan de correction : 290€, livré en 48h.", "done": "le prix est en ligne sur brandpulse-app.onrender.com" },
