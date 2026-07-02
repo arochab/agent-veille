@@ -59,6 +59,17 @@ JOURS_FENETRE = 7  # digest = "cette semaine"
 MAX_DETAIL_PAR_SECTION = 5
 
 
+def esc(s) -> str:
+    """Echappe le HTML pour Telegram (parse_mode=HTML). Duplique volontairement
+    envoyer_telegram.esc() (meme logique a 3 lignes) plutot que de l'importer :
+    envoyer_telegram.py importe DEJA digest_roi -> un import inverse creerait un
+    cycle. Necessaire ici : do_now/projet/montant peuvent contenir du texte ecrit
+    par le LLM (jury produit, vague 2B) — un '<' isole casserait le HTML envoye
+    et ferait echouer TOUT le digest, pas juste ce champ."""
+    return (str(s if s is not None else "")
+            .replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
+
+
 def _load(p: Path, default):
     try:
         return json.loads(p.read_text(encoding="utf-8"))
@@ -262,12 +273,18 @@ def formater_digest(jours: int = JOURS_FENETRE) -> str:
             "<i>— The Wire</i>"
         )
 
+    # MECE (jury produit, vague 2B) : nb_fait INCLUT deja les payes (statut in
+    # ("fait","paye"), calculer_digest ligne 182) — payes est un SOUS-ENSEMBLE de
+    # faits, pas une categorie a cote. Affiche "fait" = shippe mais PAS (encore)
+    # confirme paye, pour que les sous-lignes s'additionnent exactement au total
+    # (jamais 5+3+8+3=19 pour 16 lances).
+    nb_fait_non_paye = d["nb_fait"] - d["nb_paye"]
     L = [
         f"📊 <b>The Wire — bilan {jours} jours</b>",
         "━━━━━━━━━━━━━━━",
         "",
         f"🚀 <b>{d['nb_lances']}</b> go lancé(s) → dont :",
-        f"   ✅ {d['nb_fait']} fait(s) / shippé(s)",
+        f"   ✅ {nb_fait_non_paye} shippé(s) (pas encore payé confirmé)",
     ]
     if d["nb_paye"] > 0:
         montant_str = f"{d['total_confirme_euros']:.0f}€" if d["total_confirme_euros"] > 0 else ""
@@ -290,7 +307,7 @@ def formater_digest(jours: int = JOURS_FENETRE) -> str:
         L.append("")
         L.append("<b>Payés :</b>")
         for p in tetes:
-            L.append(f"   · {p['projet']} — {p['montant'] or '(montant non chiffré)'}")
+            L.append(f"   · {esc(p['projet'])} — {esc(p['montant']) or '(montant non chiffré)'}")
         if k:
             L.append(f"   <i>… et {k} autre(s)</i>")
     if d["en_cours_detail"]:
@@ -299,7 +316,7 @@ def formater_digest(jours: int = JOURS_FENETRE) -> str:
         L.append("<b>En cours :</b>")
         for e in tetes:
             trace = f"{e['commits']} commit(s)" if e["commits"] else "pas encore de trace"
-            L.append(f"   · {e['projet']} — {trace}")
+            L.append(f"   · {esc(e['projet'])} — {trace}")
         if k:
             L.append(f"   <i>… et {k} autre(s)</i>")
     if d["dormants_detail"]:
@@ -307,17 +324,19 @@ def formater_digest(jours: int = JOURS_FENETRE) -> str:
         L.append("")
         L.append("<b>Dormants :</b>")
         for dm in tetes:
-            L.append(f"   · {dm['projet']}")
+            L.append(f"   · {esc(dm['projet'])}")
         if k:
             L.append(f"   <i>… et {k} autre(s)</i>")
 
     # Cash-close (point 4) : le go le plus avance cite SON PROPRE do_now (deja
-    # ecrit par le radar) comme prochain pas — rien d'invente ici.
+    # ecrit par le radar) comme prochain pas — rien d'invente ici. esc() car
+    # do_now vient du LLM (jury produit, vague 2B) : un '<' non echappe cassait
+    # le HTML et faisait echouer l'envoi du digest ENTIER, pas juste ce move.
     if d["plus_avance"]:
         L.append("")
-        # do_now CITE tel quel, juste coupe a la limite de mot s'il deborde (tenue
-        # a l'echelle : le message entier doit rester < 3500 caracteres).
-        L.append(f"👉 <b>Le plus avancé</b> — {d['plus_avance']['projet']} : {_couper_mot(d['plus_avance']['do_now'])}")
+        # do_now CITE tel quel (echappe), juste coupe a la limite de mot s'il
+        # deborde (tenue a l'echelle : le message entier doit rester < 3500 car).
+        L.append(f"👉 <b>Le plus avancé</b> — {esc(d['plus_avance']['projet'])} : {esc(_couper_mot(d['plus_avance']['do_now']))}")
 
     # Potentiel estime (point 5) : affiche a part, seulement si detectable,
     # jamais mele au montant confirme.

@@ -206,9 +206,24 @@ def _appel_api(req: urllib.request.Request) -> dict | None:
     return None
 
 
+# Pastille colorée par projet (repère visuel rapide) — même 6 couleurs ramp que la PWA
+# (DESIGN-SPEC.md §3) : l'identité du projet, jamais décorative.
+DOT = {"blue": "🔵", "teal": "🟢", "purple": "🟣", "coral": "🟠", "amber": "🟡", "gray": "⚪"}
+
+# LEXIQUE FIXE — la seule palette dont on dispose en Telegram (HTML pauvre, pas de
+# couleur ni de taille) est la hiérarchie typographique + un jeu d'emojis-signal
+# CONSTANT. Chaque emoji ne veut dire qu'UNE chose, toujours la même, jamais posé
+# pour décorer. Registre complet (pour ne pas en introduire un nouveau par accident) :
+#   📡 en-tête du radar          ⭐️ move du jour (star)      💡 insight (lecture stratégique)
+#   👉 do now (action immédiate) ⏱ meta (effort/gain)        ➡️ ensuite (prochaine étape)
+#   ♻️ aussi pour (transfert)    🎓 skill up de la semaine   📲 lien vers la PWA
+#   ☕️ jour calme                ✓  step fait (dans le plan)
+DOT_SANS_RAMP = "⚪"
+
+
 def send(token: str, chat: str, html: str) -> bool:
     """Envoie en HTML riche. Si > limite, découpe sur les FRONTIERES DE BLOCS
-    (</blockquote>), JAMAIS au milieu d'une balise — sinon Telegram refuse
+    (fin de move), JAMAIS au milieu d'une balise — sinon Telegram refuse
     ('can't find end tag'). Deux filets par-dessus : _equilibrer_balises referme et
     rouvre toute balise a cheval sur une frontiere, et _refendre_si_trop_long
     garantit qu'aucun morceau ne depasse jamais 4096, meme si un seul bloc est
@@ -218,18 +233,32 @@ def send(token: str, chat: str, html: str) -> bool:
     if len(html) <= TG_LIMIT:
         chunks = [html]
     else:
-        # Frontieres SURES = fin d'un move (</blockquote>) : jamais au milieu d'une
-        # balise <pre>/<blockquote>. On coupe apres un </blockquote> quand le buffer
-        # approche la limite.
-        blocs = []
-        reste = html
-        marqueur = "</blockquote>"
-        while marqueur in reste:
-            i = reste.index(marqueur) + len(marqueur)
-            blocs.append(reste[:i])
-            reste = reste[i:]
-        if reste:
-            blocs.append(reste)
+        # Frontieres SURES = fin d'un move. Deux marqueurs, car un move SANS
+        # aucun champ detaille (meta/pourquoi/insight/do_now/steps/ensuite/
+        # aussi_pour, cas rare) n'a PAS de </blockquote> (format_radar, "if
+        # detail:") -> se fier a lui seul coupait parfois EN PLEIN MILIEU d'un
+        # tel move (bug reel trouve par le jury produit, vague 2B). Le second
+        # marqueur ("\n\n\n" + dot de debut de move) existe pour TOUT move,
+        # avec ou sans blockquote -> filet de coupe universel.
+        pos = set()
+        i = html.find("</blockquote>")
+        while i != -1:
+            pos.add(i + len("</blockquote>"))
+            i = html.find("</blockquote>", i + 1)
+        for dot in set(DOT.values()) | {DOT_SANS_RAMP}:
+            marqueur = "\n\n\n" + dot
+            i = html.find(marqueur)
+            while i != -1:
+                if i > 0:  # jamais une coupe a la toute premiere position
+                    pos.add(i)
+                i = html.find(marqueur, i + 1)
+        frontieres = sorted(pos)
+        blocs, prev = [], 0
+        for f in frontieres:
+            blocs.append(html[prev:f])
+            prev = f
+        if prev < len(html):
+            blocs.append(html[prev:])
         buf = ""
         for bloc in blocs:
             if buf and len(buf) + len(bloc) > TG_LIMIT:
@@ -260,19 +289,6 @@ def send(token: str, chat: str, html: str) -> bool:
     return True
 
 
-# Pastille colorée par projet (repère visuel rapide) — même 6 couleurs ramp que la PWA
-# (DESIGN-SPEC.md §3) : l'identité du projet, jamais décorative.
-DOT = {"blue": "🔵", "teal": "🟢", "purple": "🟣", "coral": "🟠", "amber": "🟡", "gray": "⚪"}
-
-# LEXIQUE FIXE — la seule palette dont on dispose en Telegram (HTML pauvre, pas de
-# couleur ni de taille) est la hiérarchie typographique + un jeu d'emojis-signal
-# CONSTANT. Chaque emoji ne veut dire qu'UNE chose, toujours la même, jamais posé
-# pour décorer. Registre complet (pour ne pas en introduire un nouveau par accident) :
-#   📡 en-tête du radar          ⭐️ move du jour (star)      💡 insight (lecture stratégique)
-#   👉 do now (action immédiate) ⏱ meta (effort/gain)        ➡️ ensuite (prochaine étape)
-#   ♻️ aussi pour (transfert)    🎓 skill up de la semaine   📲 lien vers la PWA
-#   ☕️ jour calme                ✓  step fait (dans le plan)
-DOT_SANS_RAMP = "⚪"
 
 
 def _section_suivi_go() -> str:
@@ -507,10 +523,43 @@ def envoyer_digest_roi(token: str, chat: str) -> int:
     return 0 if ok else 1
 
 
+def format_jury_nogo() -> str:
+    """Alerte 'defaut de fond' : le cerveau A produit un radar, mais le jury de
+    clarte le rejette encore APRES la tentative d'auto-reparation (raccourcir les
+    champs trop longs ne suffit pas -> le probleme est dans le FOND, pas la forme :
+    ex. move star sans insight, que l'auto-reparateur ne peut jamais inventer).
+    Distinct de l'analyse muette (aucun radar produit) : ici il EXISTE mais il est
+    refuse. Comme envoi-echoue, radar.json reste sur disque (pas archive)."""
+    return "\n".join([
+        "🧠🚫 <b>THE WIRE — RADAR REJETE PAR LE JURY</b>",
+        "<i>L'analyse a produit un radar, mais le jury de clarte le refuse encore apres auto-reparation.</i>",
+        "━━━━━━━━━━━━━━━",
+        "",
+        "Ce n'est <b>pas</b> un jour calme : un radar existe, il ne passe pas le controle qualite.",
+        "<b>Cause probable :</b> un defaut de FOND (ex. un move star sans insight — l'auto-reparateur",
+        "raccourcit les textes trop longs, mais n'invente jamais un contenu manquant).",
+        "",
+        "👉 <code>data/radar.json</code> a ete CONSERVE (pas archive) : regarde",
+        "<code>data/veille.log</code> pour le detail du rejet, corrige si besoin,",
+        "relance <code>python systeme/jury_clarte.py data/radar.json</code>.",
+    ])
+
+
+def envoyer_jury_nogo(token: str, chat: str) -> int:
+    """Mode --jury-nogo : alerte qu'un radar produit a ete rejete par le jury de
+    clarte meme apres auto-reparation (appele par lancer_veille.bat sur NO-GO
+    persistant — jusqu'ici une panne totalement silencieuse, corrige suite au
+    jury produit de la vague 2B)."""
+    ok = send(token, chat, format_jury_nogo())
+    print("Alerte jury-nogo envoyee." if ok else "Echec de l'alerte jury-nogo (reseau probablement mort).")
+    return 0 if ok else 1
+
+
 def main() -> int:
     mode_incident = "--incident" in sys.argv
     mode_analyse_morte = "--analyse-morte" in sys.argv
     mode_envoi_echoue = "--envoi-echoue" in sys.argv
+    mode_jury_nogo = "--jury-nogo" in sys.argv
     mode_roi = "--roi" in sys.argv
     cfg = load_config()
     token = cfg.get("telegram_bot_token", "")
@@ -522,6 +571,8 @@ def main() -> int:
         return envoyer_analyse_morte(token, chat)
     if mode_envoi_echoue:
         return envoyer_envoi_echoue(token, chat)
+    if mode_jury_nogo:
+        return envoyer_jury_nogo(token, chat)
     if mode_roi:
         return envoyer_digest_roi(token, chat)
     if mode_incident:

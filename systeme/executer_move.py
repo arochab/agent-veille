@@ -758,12 +758,18 @@ def traiter_go(token: str, chat: str, n: int) -> None:
         return
 
     projet = move.get("projet", "?")
-    msg = (f"Je lance Claude Code sur {projet} pour le move #{n}. "
-           "Il va lire le projet et te proposer un PLAN - il n'ecrit rien avant ton OK.")
+    # Message honnete dans les DEUX cas : quand plan_go_ok, PLAN-GO.md est deja
+    # ecrit a cet instant (etape 1, avant ce message) -> ne jamais dire "il n'ecrit
+    # rien avant ton OK" dans ce cas, ce serait faux (jury produit, corrige).
     if plan_go_ok:
-        msg += " Plan Fable pret (PLAN-GO.md) - Sonnet l'execute etape par etape."
+        msg = (f"Je lance Claude Code sur {projet} pour le move #{n}. "
+               "Fable a deja depose un brouillon de plan (PLAN-GO.md) dans le "
+               "dossier - rien d'autre n'est ecrit. Sonnet va le lire et l'executer "
+               "etape par etape.")
     else:
-        msg += " Plan Fable indisponible, session directe."
+        msg = (f"Je lance Claude Code sur {projet} pour le move #{n}. "
+               "Plan Fable indisponible : il va lire le projet et te proposer un "
+               "plan direct - il n'ecrit rien avant ton OK.")
     tg_send(token, chat, msg)
     log(f"go {n} : Claude ouvert sur '{projet}' ({projet_dir}) [cle={cle}] [plan_go={plan_go_ok}].")
 

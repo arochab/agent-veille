@@ -1581,29 +1581,31 @@ def _insight(g: dict, num: int) -> str:
     s, proj = g["statut"], _nom_affichage(g["projet"])
     # Nom produit + (dossier technique) une seule fois quand ils different (Amelioration 1).
     tete = f"<b>{num}. {proj}</b>{_mention_dossier(g)}"
+    # Registre accentue partout (jury produit, vague 2B) : le reste du radar est
+    # en francais correct, cette section ne doit pas rompre le ton chaque matin.
     if s == "paye":
         m = f" ({g['montant']})" if g.get("montant") else ""
-        return f"💶 {tete} — <b>a paye{m}</b>. Tu l'as confirme. Ce type de move rapporte : refais-en."
+        return f"💶 {tete} — <b>a payé{m}</b>. Tu l'as confirmé. Ce type de move rapporte : refais-en."
     if s == "fait":
         pr = _preuve_citee(g)
         pr = f" <i>[{pr}]</i>" if pr else ""
-        return f"✅ {tete} — <b>fait</b>, shippe.{pr} A monetiser si ce n'est pas deja le cas."
+        return f"✅ {tete} — <b>fait</b>, shippé.{pr} À monétiser si ce n'est pas déjà le cas."
     if s == "probablement_fait":
         h = next((x for x in reversed(g.get("hypotheses", [])) if x.get("verdict") == "probablement_fait"), {})
         pr = h.get("preuve_citee", "")
-        return (f"🟡 {tete} — <b>probablement fait</b> (hypothese, {int(g.get('confiance',0)*100)}%). "
+        return (f"🟡 {tete} — <b>probablement fait</b> (hypothèse, {int(g.get('confiance',0)*100)}%). "
                 f"Indice : « {_safe_html(pr)[:50]} ». Confirme avec « fait {num} » si c'est bon.")
     if s == "en_cours":
-        return (f"🛠️ {tete} — <b>tu bosses dessus</b>, lance {_quand(g)}. "
-                f"Pas encore de commit fige. Continue, ou dis « fait {num} » quand c'est shippe.")
+        return (f"🛠️ {tete} — <b>tu bosses dessus</b>, lancé {_quand(g)}. "
+                f"Pas encore de commit figé. Continue, ou dis « fait {num} » quand c'est shippé.")
     if s == "projet_bouge":
-        return (f"🔨 {tete} — <b>ca avance</b>, lance {_quand(g)}, le projet bouge "
-                f"({g.get('commits_depuis_go',0)} commit(s)) mais rien qui prouve ce move precis. "
+        return (f"🔨 {tete} — <b>ça avance</b>, lancé {_quand(g)}, le projet bouge "
+                f"({g.get('commits_depuis_go',0)} commit(s)) mais rien qui prouve ce move précis. "
                 f"Termine-le, ou dis « fait {num} ».")
     if s == "dormant":
-        return (f"💤 {tete} — <b>dormant</b> : lance {_quand(g)}, zero mouvement depuis. "
-                f"A relancer, ou classe-le avec « skip {num} ».")
-    return f"🚀 {tete} — <b>lance {_quand(g)}</b>, encore aucun signe. Normal si c'est frais."
+        return (f"💤 {tete} — <b>dormant</b> : lancé {_quand(g)}, zéro mouvement depuis. "
+                f"À relancer, ou classe-le avec « skip {num} ».")
+    return f"🚀 {tete} — <b>lancé {_quand(g)}</b>, encore aucun signe. Normal si c'est frais."
 
 
 def _safe_html(s: str) -> str:

@@ -96,7 +96,12 @@ if exist "data\radar.json" (
       echo [%NOW%] alerte envoi-echoue code retour = !ERRORLEVEL!>> "%LOG%"
     )
   ) else (
-    echo [%NOW%] jury NO-GO persistant ^(defaut de FOND^) - radar PAS envoye.>> "%LOG%"
+    REM GARDE-FOU (audit Fable, vague 2B) : un NO-GO persistant etait jusqu'ici
+    REM une panne 100% silencieuse (rien que le log) -> un defaut de FOND ne doit
+    REM JAMAIS ressembler a un jour calme, meme punition que les autres pannes.
+    echo [%NOW%] jury NO-GO persistant ^(defaut de FOND^) - radar PAS envoye, alerte envoyee.>> "%LOG%"
+    %PYEXE% systeme\envoyer_telegram.py --jury-nogo >> "%LOG%" 2>&1
+    echo [%NOW%] alerte jury-nogo code retour = !ERRORLEVEL!>> "%LOG%"
   )
 ) else (
   echo [%NOW%] pas de data\radar.json - rien a pousser ^(analyse pas encore faite^).>> "%LOG%"
