@@ -31,6 +31,7 @@ CLI :
   python systeme/executer_move.py --watch     # boucle (long-poll ~ toutes les 20s)
 """
 from __future__ import annotations
+import csv
 import json
 import os
 import re
@@ -171,7 +172,10 @@ def tg_send(token: str, chat: str, text: str) -> bool:
     req = urllib.request.Request(
         f"https://api.telegram.org/bot{token}/sendMessage", data=data)
     try:
-        r = json.load(urllib.request.urlopen(req, timeout=20))
+        # with -> la connexion HTTP est fermee deterministiquement (pas au bon
+        # vouloir du GC), important pour un poller qui tourne des heures.
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            r = json.load(resp)
         if not r.get("ok"):
             log("Erreur Telegram sendMessage: " + str(r.get("description")))
             return False
@@ -481,7 +485,8 @@ def construire_move_markdown(move: dict) -> str:
 
 def ecrire_prompt_temp(move_id: str, prompt: str) -> str:
     """Ecrit le prompt (UTF-8, une ligne) dans %TEMP%\\thewire_move_<id>.txt.
-    Le .bat le relit avec for/f et le passe a claude -> zero enfer de quoting."""
+    Le lanceur .ps1 le relit (ReadAllText) et le passe a claude -> zero enfer
+    de quoting (l'ancien relais .bat est mort, supprime : audit Fable P2)."""
     tmp = Path(os.environ.get("TEMP", os.environ.get("TMP", str(ROOT)))) / f"thewire_move_{move_id}.txt"
     tmp.write_text(prompt, encoding="utf-8")
     return str(tmp)
@@ -787,15 +792,27 @@ def un_passage(token: str, chat: str) -> None:
 # ------------------------------------------------------------------------------
 
 def _pid_vivant(pid: int) -> bool:
-    """True si le PID tourne encore (Windows: tasklist)."""
+    """True si le PID tourne encore (Windows: tasklist).
+
+    Parsing EXACT en CSV (audit Fable, P2) : l'ancien test `str(pid) in out`
+    matchait les SOUS-CHAINES -> le PID 123 passait pour vivant des qu'un PID
+    1234 existait. Faux positif silencieux : le poller croyait qu'une autre
+    instance tournait et refusait de demarrer. Ici tasklist sort du CSV
+    ("image","PID","session",...) filtre sur le PID, et on compare STRICTEMENT
+    le champ PID. Si le filtre ne matche rien, tasklist ecrit un message
+    d'information (pas du CSV a 2 champs) -> aucune ligne ne passe -> False."""
     try:
         out = subprocess.run(
-            ["tasklist", "/FI", f"PID eq {pid}", "/NH"],
+            ["tasklist", "/FO", "CSV", "/NH", "/FI", f"PID eq {pid}"],
             capture_output=True, text=True, timeout=10,
         ).stdout
-        return str(pid) in out
+        for row in csv.reader(out.splitlines()):
+            if len(row) >= 2 and row[1].strip() == str(pid):
+                return True
+        return False
     except Exception:
-        # En cas de doute, on suppose vivant (on n'ecrase pas un poller actif).
+        # En cas de doute (tasklist KO), on suppose vivant : on n'ecrase pas
+        # un poller potentiellement actif (comportement conservateur historique).
         return True
 
 

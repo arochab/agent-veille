@@ -11,6 +11,8 @@ Robuste : si pas de radar.json ou radar vide -> message "rien de neuf" (ou silen
 from __future__ import annotations
 import json
 import sys
+import time
+import urllib.error  # explicite : ne pas dependre de l'import implicite fait par urllib.request
 import urllib.request
 import urllib.parse
 from pathlib import Path
@@ -21,6 +23,8 @@ CONFIG = ROOT / "config.local.json"
 RADAR = ROOT / "data" / "radar.json"
 SIGNAUX = ROOT / "data" / "signaux_frais.json"
 TG_LIMIT = 4096  # limite Telegram par message
+DELAIS_RETRY = (2.0, 5.0)  # backoff des re-essais d'envoi : ~2 s puis ~5 s (2 retries max)
+RETRY_AFTER_PLAFOND = 30.0  # un 429 Telegram peut annoncer retry_after : respecte mais plafonne
 
 
 def load_config() -> dict:
@@ -46,42 +50,170 @@ def _dans_une_balise(s: str, pos: int) -> bool:
     return ferme >= pos  # un '<' non encore ferme avant pos = on est dans la balise
 
 
+def _dans_une_entite(s: str, pos: int) -> bool:
+    """True si pos tombe au MILIEU d'une entite HTML (&amp; &lt; ...). Couper la
+    laisserait un '&am' orphelin en fin de chunk et un debut d'entite perdu au
+    suivant : texte affiche faux. Une entite fait moins de 10 caracteres, on ne
+    regarde donc qu'en arriere proche."""
+    amp = s.rfind("&", max(0, pos - 9), pos)
+    if amp == -1:
+        return False
+    return ";" not in s[amp:pos]  # '&' pas encore referme avant pos = on est dedans
+
+
+# Balises HTML acceptees par Telegram : les seules a fermer/rouvrir a la coupe.
+BALISES_TG = {"b", "strong", "i", "em", "u", "ins", "s", "strike", "del",
+              "a", "code", "pre", "blockquote", "tg-spoiler", "span"}
+
+
+def _balises_ouvertes(s: str) -> list:
+    """Scanne le HTML et rend la pile des balises encore OUVERTES a la fin, sous
+    forme (nom, texte_ouvrant_complet) — ex. ('blockquote', '<blockquote expandable>').
+    POURQUOI : Telegram rejette tout chunk aux balises non appariees ('can't find
+    end tag') et TOUT l'envoi echoue ; pour decouper sans casser, il faut savoir
+    exactement quoi fermer en fin de chunk et quoi rouvrir au debut du suivant."""
+    pile = []
+    i, n = 0, len(s)
+    while i < n:
+        ouvre = s.find("<", i)
+        if ouvre == -1:
+            break
+        ferme = s.find(">", ouvre + 1)
+        if ferme == -1:
+            break  # balise tronquee en bout de chaine (les coupes l'evitent en amont)
+        contenu = s[ouvre + 1:ferme].strip()
+        if contenu.startswith("/"):
+            nom = contenu[1:].strip().lower()
+            for k in range(len(pile) - 1, -1, -1):  # depile la derniere ouverture du meme nom
+                if pile[k][0] == nom:
+                    del pile[k]
+                    break
+        elif contenu:
+            nom = contenu.split()[0].lower()
+            if nom in BALISES_TG:
+                pile.append((nom, s[ouvre:ferme + 1]))
+        i = ferme + 1
+    return pile
+
+
+def _equilibrer_balises(chunks: list) -> list:
+    """Ferme les balises restees ouvertes en fin de chunk et les ROUVRE au debut
+    du suivant (attributs conserves : '<blockquote expandable>', '<a href=...>').
+    POURQUOI : une frontiere de decoupe peut tomber au milieu d'un <b>...</b> ;
+    sans ce raccommodage, Telegram rejette le chunk et le radar entier est perdu."""
+    out = []
+    pile = []  # balises ouvertes heritees du chunk precedent
+    for chunk in chunks:
+        chunk = "".join(texte for _, texte in pile) + chunk
+        pile = _balises_ouvertes(chunk)
+        out.append(chunk + "".join("</%s>" % nom for nom, _ in reversed(pile)))
+    return out
+
+
+def _position_coupe(s: str, limite: int) -> int:
+    """Meilleure position de coupe avant `limite` : le dernier '\\n' HORS balise
+    (frontiere naturelle), sinon on recule jusqu'a sortir de toute balise ou
+    entite. En dernier recours : coupe dure juste avant la limite (pathologique)."""
+    for i in range(limite - 1, 0, -1):
+        if s[i] == "\n" and not _dans_une_balise(s, i):
+            return i
+    coupe = limite - 1
+    while coupe > 0 and (_dans_une_balise(s, coupe) or _dans_une_entite(s, coupe)):
+        coupe -= 1
+    if coupe <= 0:
+        coupe = limite - 1  # abandon : coupe dure (cas pathologique)
+    return coupe
+
+
 def _refendre_si_trop_long(chunk: str) -> list:
     """FILET DE SECURITE : garantit qu'aucun morceau ne depasse TG_LIMIT, meme si un
-    seul bloc (un move a gros <pre>, ou la queue) est enorme. On coupe sur la frontiere
-    sure la plus tardive avant la limite : un saut de ligne HORS balise. En dernier
-    recours (aucun saut de ligne exploitable), coupe dure a un point hors balise.
-    Sans ce filet, Telegram renvoie HTTP 400 et TOUT le radar est perdu silencieusement."""
+    seul bloc (un move a gros <pre>, ou la queue) est enorme. La coupe est HTML-SAFE :
+    jamais au milieu d'une balise ni d'une entite, et toute balise encore ouverte a
+    la coupe (<b>, <pre>, <blockquote>...) est FERMEE en fin de morceau puis ROUVERTE
+    au debut du suivant. Sans ce filet, Telegram renvoie HTTP 400 et TOUT le radar
+    est perdu silencieusement."""
     if len(chunk) <= TG_LIMIT:
         return [chunk]
     out = []
     reste = chunk
     while len(reste) > TG_LIMIT:
-        # cherche le dernier '\n' avant la limite qui ne soit pas dans une balise
-        coupe = -1
-        for i in range(TG_LIMIT - 1, 0, -1):
-            if reste[i] == "\n" and not _dans_une_balise(reste, i):
-                coupe = i
+        # coupe sure la plus tardive, en gardant la place pour FERMER les balises
+        limite = TG_LIMIT
+        while True:
+            coupe = _position_coupe(reste, limite)
+            pile = _balises_ouvertes(reste[:coupe])
+            fermetures = "".join("</%s>" % nom for nom, _ in reversed(pile))
+            if coupe + len(fermetures) <= TG_LIMIT or limite <= 1:
                 break
-        if coupe <= 0:
-            # aucun saut de ligne sur : recule jusqu'a sortir de toute balise
-            coupe = TG_LIMIT - 1
-            while coupe > 0 and _dans_une_balise(reste, coupe):
-                coupe -= 1
-            if coupe <= 0:
-                coupe = TG_LIMIT - 1  # abandon : coupe dure (cas pathologique)
-        out.append(reste[:coupe])
-        reste = reste[coupe:].lstrip("\n")
+            limite = max(coupe - len(fermetures), 1)  # trop juste : retente plus tot
+        piece = reste[:coupe] + fermetures
+        suivant = "".join(texte for _, texte in pile) + reste[coupe:].lstrip("\n")
+        if len(suivant) >= len(reste):
+            # garde-fou anti-boucle (nid de balises pathologique, jamais vu en vrai) :
+            # coupe dure sans equilibrage plutot que boucler a l'infini
+            piece, suivant = reste[:TG_LIMIT], reste[TG_LIMIT:]
+        out.append(piece)
+        reste = suivant
     if reste:
         out.append(reste)
     return out
 
 
+def _retry_after_depuis(corps: str, defaut: float) -> float:
+    """Extrait parameters.retry_after du corps JSON d'un 429 Telegram (sinon rend
+    `defaut`). Plafonne : un retry_after delirant annonce par l'API ne doit pas
+    suspendre le run du matin plus de RETRY_AFTER_PLAFOND secondes."""
+    try:
+        val = float(json.loads(corps).get("parameters", {}).get("retry_after"))
+        return max(0.0, min(val, RETRY_AFTER_PLAFOND))
+    except Exception:
+        return defaut
+
+
+def _appel_api(req: urllib.request.Request) -> dict | None:
+    """UN appel HTTP a l'API Telegram, re-essaye 2 fois sur erreur TRANSITOIRE :
+    panne reseau/timeout, HTTP 5xx, HTTP 429 (en respectant son retry_after).
+    POURQUOI : le radar part a 10h pile ; un hoquet reseau de 2 s ne doit pas
+    couter le brief du jour. Un 4xx autre que 429 = CONTENU refuse : insister est
+    inutile, on echoue net. Rend le JSON de reponse, ou None si tout a echoue
+    (l'appelant rend alors False -> code retour 1, contrat de lancer_veille.bat)."""
+    for tentative in range(len(DELAIS_RETRY) + 1):
+        try:
+            return json.load(urllib.request.urlopen(req, timeout=20))
+        except urllib.error.HTTPError as e:
+            corps = e.read().decode("utf-8", "replace")
+            transitoire = (e.code == 429) or (500 <= e.code < 600)
+            if not transitoire or tentative >= len(DELAIS_RETRY):
+                print("HTTP", e.code, corps.encode("ascii", "replace").decode("ascii"))
+                return None
+            attente = DELAIS_RETRY[tentative]
+            if e.code == 429:
+                attente = _retry_after_depuis(corps, attente)
+            print("HTTP %d transitoire, nouvel essai dans %.0f s..." % (e.code, attente))
+            time.sleep(attente)
+        except (urllib.error.URLError, TimeoutError, OSError) as e:
+            # URLError couvre DNS/connexion ; TimeoutError le timeout d'urlopen
+            if tentative >= len(DELAIS_RETRY):
+                print("Echec envoi:", str(e).encode("ascii", "replace").decode("ascii"))
+                return None
+            attente = DELAIS_RETRY[tentative]
+            print("Erreur reseau (%s), nouvel essai dans %.0f s..." % (e.__class__.__name__, attente))
+            time.sleep(attente)
+        except Exception as e:
+            # erreur NON transitoire (ex. reponse illisible) : re-essayer est inutile
+            print("Echec envoi:", str(e).encode("ascii", "replace").decode("ascii"))
+            return None
+    return None
+
+
 def send(token: str, chat: str, html: str) -> bool:
     """Envoie en HTML riche. Si > limite, découpe sur les FRONTIERES DE BLOCS
     (</blockquote>), JAMAIS au milieu d'une balise — sinon Telegram refuse
-    ('can't find end tag'). Un FILET (_refendre_si_trop_long) garantit en plus qu'aucun
-    morceau ne depasse jamais 4096, meme si un seul bloc est enorme (gros <pre>)."""
+    ('can't find end tag'). Deux filets par-dessus : _equilibrer_balises referme et
+    rouvre toute balise a cheval sur une frontiere, et _refendre_si_trop_long
+    garantit qu'aucun morceau ne depasse jamais 4096, meme si un seul bloc est
+    enorme (gros <pre>). Chaque appel HTTP est re-essaye sur erreur transitoire
+    (_appel_api) ; un echec definitif rend False -> code retour 1 du script."""
     chunks = []
     if len(html) <= TG_LIMIT:
         chunks = [html]
@@ -106,25 +238,24 @@ def send(token: str, chat: str, html: str) -> bool:
                 buf += bloc
         if buf:
             chunks.append(buf)
-    # FILET : un bloc unique peut lui-meme depasser 4096 (gros <pre>, longue queue).
-    # On re-fend chaque chunk survivant sur une frontiere sure. Aucun envoi > limite.
+    # FILET 1 : jamais de balise laissee ouverte en fin de chunk (Telegram rejette).
+    chunks = _equilibrer_balises(chunks)
+    # FILET 2 : un bloc unique peut lui-meme depasser 4096 (gros <pre>, longue queue).
+    # On re-fend chaque chunk survivant sur une frontiere sure ET equilibree.
     chunks = [c for chunk in chunks for c in _refendre_si_trop_long(chunk)]
     for chunk in chunks:
+        if not chunk.strip():
+            continue  # jamais de message vide vers l'API (400 assure, envoi perdu)
         data = urllib.parse.urlencode({
             "chat_id": chat, "text": chunk, "parse_mode": "HTML",
             "disable_web_page_preview": "true",
         }).encode("utf-8")
         req = urllib.request.Request(f"https://api.telegram.org/bot{token}/sendMessage", data=data)
-        try:
-            r = json.load(urllib.request.urlopen(req, timeout=20))
-            if not r.get("ok"):
-                print("Erreur Telegram:", r.get("description"))
-                return False
-        except urllib.error.HTTPError as e:
-            print("HTTP", e.code, e.read().decode("utf-8", "replace"))
+        r = _appel_api(req)
+        if r is None:
             return False
-        except Exception as e:
-            print("Echec envoi:", e)
+        if not r.get("ok"):
+            print("Erreur Telegram:", r.get("description"))
             return False
     return True
 

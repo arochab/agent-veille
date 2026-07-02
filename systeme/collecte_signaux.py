@@ -19,12 +19,20 @@ DEUX GARDE-FOUS AJOUTES (tache #3) :
       Les URLs du jour partent dans un SAS (data/vu_sas.json). Elles ne rejoignent
       vu.json qu'au PROCHAIN run reussi (donc apres avoir eu une chance de servir).
       Resultat : un crash entre collecte et livraison ne brule pas les signaux.
+
+COLLECTE PARALLELE : chaque (canal, requete) part dans un ThreadPoolExecutor au
+lieu d'attendre la requete precedente. Une source lente ne ralentit plus tout le
+run du matin. Les resultats sont REASSEMBLES dans l'ordre de soumission (identique
+a l'ancien ordre sequentiel projet -> requete -> canal), donc l'ordre d'arrivee
+des threads ne fuit JAMAIS dans la sortie : memes entrees, meme signaux_frais.json.
+Toutes les ecritures fichiers restent dans le thread principal, apres la collecte.
 """
 from __future__ import annotations
 import json
 import os
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor, CancelledError, wait as futures_wait
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -299,6 +307,64 @@ COLLECTEURS = {
     "youtube": collecte_youtube,
 }
 
+# ---- Parallelisation de la collecte ----
+# 8 workers : assez pour absorber ~40-50 taches (canal x requete) sans marteler
+# les API ; chaque tache garde son timeout reseau individuel (run()/http_get()).
+MAX_WORKERS = 8
+# Filet global : si le pool depasse ce budget (sources qui rament toutes en meme
+# temps), on n'attend plus — les taches non terminees deviennent des incidents.
+# Les taches deja lancees restent bornees par leur timeout individuel (<= 90s).
+TIMEOUT_GLOBAL_POOL = 300  # secondes
+
+# Marqueur d'erreur pour une tache sacrifiee par le timeout global du pool.
+ERR_TIMEOUT_POOL = "__ERR__ timeout global du pool de collecte"
+
+
+def _tache_collecte(fn, req: str) -> tuple[list[dict], str | None]:
+    """Enveloppe d'une tache de collecte executee dans un thread du pool.
+    Pourquoi : les collecteurs sont concus pour ne jamais lever, mais si un bug
+    imprevu leve quand meme, on le convertit en erreur de canal (incident visible)
+    au lieu de laisser une exception orpheline dans un thread. Fonction PURE :
+    aucune ecriture fichier ni etat partage ici (thread-safety par construction)."""
+    try:
+        return fn(req)
+    except Exception as e:
+        return ([], f"__ERR__ exception collecteur: {e}")
+
+
+def collecter_en_parallele(taches: list[tuple]) -> list[tuple[list[dict], str | None]]:
+    """Execute toutes les taches (projet, requete, canal, fn) en parallele et
+    renvoie les resultats DANS L'ORDRE DE SOUMISSION — jamais l'ordre d'arrivee
+    des threads. C'est ce qui garantit le determinisme : la liste renvoyee est
+    alignee index a index sur `taches`, donc bruts/dedup/tri par score voient
+    exactement le meme ordre que l'ancienne boucle sequentielle (scorer_tous est
+    un tri stable : a scores egaux, l'ordre d'origine — deterministe — est garde).
+    Timeout global : les taches pas finies a temps sont annulees (jamais demarrees)
+    ou abandonnees (bornees par leur timeout individuel) et rendent une erreur."""
+    resultats: list[tuple[list[dict], str | None]] = []
+    pool = ThreadPoolExecutor(max_workers=MAX_WORKERS)
+    try:
+        futures = [pool.submit(_tache_collecte, fn, req) for (_p, req, _c, fn) in taches]
+        _, pas_finies = futures_wait(futures, timeout=TIMEOUT_GLOBAL_POOL)
+        for f in pas_finies:
+            f.cancel()  # n'annule que ce qui n'a pas encore demarre
+        for f in futures:
+            if f in pas_finies:
+                # Ni le resultat ni l'attente : tache sacrifiee par le budget global.
+                resultats.append(([], ERR_TIMEOUT_POOL))
+                continue
+            try:
+                resultats.append(f.result())
+            except CancelledError:
+                resultats.append(([], ERR_TIMEOUT_POOL))
+            except Exception as e:  # ceinture + bretelles (deja capte dans _tache_collecte)
+                resultats.append(([], f"__ERR__ {e}"))
+    finally:
+        # wait=False : on ne bloque pas sur d'eventuelles retardataires (bornees
+        # par leurs timeouts individuels) ; cancel_futures purge la file d'attente.
+        pool.shutdown(wait=False, cancel_futures=True)
+    return resultats
+
 
 def main() -> int:
     atelier = load_json(ATELIER_SNAP, {})
@@ -326,25 +392,34 @@ def main() -> int:
     else:
         requetes = base_figee
 
-    # Statut par canal :
+    # Plan de collecte : une tache par (canal, requete), dans l'ordre historique
+    # projet -> requete -> canal. Cet ordre de soumission EST l'ordre de depouillement
+    # (voir collecter_en_parallele), donc la sortie reste deterministe au bit pres.
+    taches: list[tuple] = []
+    for projet, reqs in requetes.items():
+        for req in reqs:
+            for canal, fn in COLLECTEURS.items():
+                taches.append((projet, req, canal, fn))
+
+    resultats = collecter_en_parallele(taches)
+
+    # Statut par canal — depouille dans le THREAD PRINCIPAL, en ordre de soumission
+    # (thread-safe par construction : aucun etat partage entre threads) :
     #   reponses[canal]   = au moins une requete a repondu sans erreur
     #   incidents_canal[c] = dernier message d'erreur rencontre sur ce canal
     reponses: dict[str, bool] = {}
     incidents_canal: dict[str, str] = {}
     bruts: list[dict] = []
 
-    for projet, reqs in requetes.items():
-        for req in reqs:
-            for canal, fn in COLLECTEURS.items():
-                items, err = fn(req)
-                if err is not None:
-                    incidents_canal[canal] = err  # garde la derniere erreur vue
-                else:
-                    reponses[canal] = True
-                for item in items:
-                    item["projet"] = projet
-                    item["requete"] = req
-                    bruts.append(item)
+    for (projet, req, canal, _fn), (items, err) in zip(taches, resultats):
+        if err is not None:
+            incidents_canal[canal] = err  # garde la derniere erreur vue
+        else:
+            reponses[canal] = True
+        for item in items:
+            item["projet"] = projet
+            item["requete"] = req
+            bruts.append(item)
 
     # --- Classement des canaux : vivant / muet-calme / EN PANNE ---
     # Un canal est EN PANNE s'il est vital (reddit inclus SI rdt.exe est installe -

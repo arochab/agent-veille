@@ -52,6 +52,12 @@ except Exception:
 
 JOURS_FENETRE = 7  # digest = "cette semaine"
 
+# TENUE A L'ECHELLE : au-dela de N lignes par section detaillee (payes / en cours /
+# dormants), le surplus devient "... et K autres". Le bilan doit rester lisible en
+# 20 secondes et < 3500 caracteres MEME avec 30 go — rien n'est perdu : tout reste
+# entier dans go_suivi.json, seul l'AFFICHAGE est plafonne.
+MAX_DETAIL_PAR_SECTION = 5
+
 
 def _load(p: Path, default):
     try:
@@ -129,6 +135,32 @@ def _extraire_montant_estime(texte: str) -> float:
         return float(m.group(1).replace(",", "."))
     except Exception:
         return 0.0
+
+
+def _plafonner(items: list, tri=None) -> tuple:
+    """TENUE A L'ECHELLE (20+ go sur la fenetre) : renvoie (tetes, k_caches) pour une
+    section detaillee — les MAX_DETAIL_PAR_SECTION premieres entrees et le nombre
+    d'entrees masquees. Le tri (optionnel, decroissant) choisit QUOI montrer en tete :
+    les payes les plus gros, les en-cours les plus actifs. Sans tri, l'ordre d'origine
+    est conserve. Aucune donnee n'est perdue : les caches sont COMPTES ('... et K
+    autres') et restent entiers dans go_suivi.json."""
+    tries = sorted(items, key=tri, reverse=True) if tri else list(items)
+    return tries[:MAX_DETAIL_PAR_SECTION], max(0, len(tries) - MAX_DETAIL_PAR_SECTION)
+
+
+def _couper_mot(texte: str, max_len: int = 200) -> str:
+    """Raccourcit une CITATION (ex : le do_now du go le plus avance) a la limite de
+    mot, sans la reformuler ni la denaturer — garde-fou pour que le message complet
+    tienne sous les 3500 caracteres meme si un do_now est tres long. Rien n'est
+    invente : c'est le texte reel, juste coupe proprement avec une ellipse."""
+    t = (texte or "").strip()
+    if len(t) <= max_len:
+        return t
+    coupe = t[:max_len]
+    esp = coupe.rfind(" ")
+    if esp >= 20:
+        coupe = coupe[:esp]
+    return coupe.rstrip(" ,;:-") + "…"
 
 
 def calculer_digest(jours: int = JOURS_FENETRE) -> dict:
@@ -247,28 +279,44 @@ def formater_digest(jours: int = JOURS_FENETRE) -> str:
         L.append(f"   💤 {d['nb_dormant']} dormant(s) — à relancer ou classer")
 
     # Detail nomme (point 3) : substance pilotable, pas juste un chiffre.
+    # TENUE A L'ECHELLE : chaque section est plafonnee (top MAX_DETAIL_PAR_SECTION) —
+    # payes tries par montant decroissant (le tri relit le champ 'montant' de confiance
+    # via _extraire_montant_euros, fonction INCHANGEE), en cours par commits
+    # decroissants, dormants dans l'ordre. Le surplus = une ligne "… et K autres".
     if d["payes_detail"]:
+        tetes, k = _plafonner(d["payes_detail"],
+                              tri=lambda p: _extraire_montant_euros(p["montant"]))
         L.append("")
         L.append("<b>Payés :</b>")
-        for p in d["payes_detail"]:
+        for p in tetes:
             L.append(f"   · {p['projet']} — {p['montant'] or '(montant non chiffré)'}")
+        if k:
+            L.append(f"   <i>… et {k} autre(s)</i>")
     if d["en_cours_detail"]:
+        tetes, k = _plafonner(d["en_cours_detail"], tri=lambda e: e["commits"])
         L.append("")
         L.append("<b>En cours :</b>")
-        for e in d["en_cours_detail"]:
+        for e in tetes:
             trace = f"{e['commits']} commit(s)" if e["commits"] else "pas encore de trace"
             L.append(f"   · {e['projet']} — {trace}")
+        if k:
+            L.append(f"   <i>… et {k} autre(s)</i>")
     if d["dormants_detail"]:
+        tetes, k = _plafonner(d["dormants_detail"])
         L.append("")
         L.append("<b>Dormants :</b>")
-        for dm in d["dormants_detail"]:
+        for dm in tetes:
             L.append(f"   · {dm['projet']}")
+        if k:
+            L.append(f"   <i>… et {k} autre(s)</i>")
 
     # Cash-close (point 4) : le go le plus avance cite SON PROPRE do_now (deja
     # ecrit par le radar) comme prochain pas — rien d'invente ici.
     if d["plus_avance"]:
         L.append("")
-        L.append(f"👉 <b>Le plus avancé</b> — {d['plus_avance']['projet']} : {d['plus_avance']['do_now']}")
+        # do_now CITE tel quel, juste coupe a la limite de mot s'il deborde (tenue
+        # a l'echelle : le message entier doit rester < 3500 caracteres).
+        L.append(f"👉 <b>Le plus avancé</b> — {d['plus_avance']['projet']} : {_couper_mot(d['plus_avance']['do_now'])}")
 
     # Potentiel estime (point 5) : affiche a part, seulement si detectable,
     # jamais mele au montant confirme.

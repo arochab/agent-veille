@@ -251,6 +251,7 @@ def main() -> int:
     suite.addTests(loader.loadTestsFromTestCase(TestAutoSources))
     suite.addTests(loader.loadTestsFromTestCase(TestReste))
     suite.addTests(loader.loadTestsFromTestCase(TestApparier))
+    suite.addTests(loader.loadTestsFromTestCase(TestImmuniteStructure))
     # Sortie ASCII-safe (Windows cp1252)
     runner = unittest.TextTestRunner(verbosity=2, stream=sys.stdout)
     result = runner.run(suite)
@@ -364,6 +365,117 @@ class TestApparier(unittest.TestCase):
         res = suivi_go._apparier_steps(steps, commits, None, "", "2026-07-01T18:00:00+02:00")
         self.assertEqual(res[0]["etat"], "inconnu",
                          "sans preuve reelle, un step ne doit jamais passer 'fait'")
+
+
+class TestImmuniteStructure(unittest.TestCase):
+    """Auto-protection du GARDIEN, SANS cycle : tests.py ne hash PAS immunite.py
+    (un hash croise tests<->immunite serait impossible a signer : changer l'un
+    changerait le hash de l'autre, a l'infini). A la place, on verrouille la
+    STRUCTURE : la liste exacte des vitaux, le blocage reel sur alteration,
+    l'alerte-sans-frein des sentinelles, et le fait que les references sont
+    CODEES EN DUR (jamais lues depuis data/, que le systeme sait ecrire)."""
+
+    # La liste canonique des 6 organes vitaux. Si quelqu'un en retire un
+    # d'ATTENDUS (= le de-protege en douce), ce test devient rouge.
+    VITAUX = {"tests.py", "jury_clarte.py", "scoring.py",
+              "auto_sources.py", "feedback.py", "apprends_poids.py"}
+
+    def setUp(self):
+        # On neutralise le kill-switch pour ces tests : HALT pointe vers un chemin
+        # temporaire INEXISTANT (jamais le vrai data/HALT.flag de production).
+        import immunite
+        self._halt_origine = immunite.HALT
+        self._sha_origine = immunite._sha
+        self._tmpdir = Path(tempfile.mkdtemp(prefix="thewire_immu_"))
+        immunite.HALT = self._tmpdir / "HALT.flag"
+
+    def tearDown(self):
+        import immunite
+        immunite.HALT = self._halt_origine
+        immunite._sha = self._sha_origine
+        try:
+            for f in self._tmpdir.iterdir():
+                f.unlink()
+            self._tmpdir.rmdir()
+        except Exception:
+            pass
+
+    def test_attendus_exactement_les_6_vitaux(self):
+        # ATTENDUS contient EXACTEMENT les 6 cles vitales (ni plus, ni moins),
+        # et chaque valeur a la forme d'un vrai sha256 (64 hexa, pas de placeholder).
+        import re
+        import immunite
+        self.assertEqual(set(immunite.ATTENDUS.keys()), self.VITAUX,
+                         "ATTENDUS doit couvrir exactement les 6 organes vitaux")
+        for nom, h in list(immunite.ATTENDUS.items()) + list(immunite.SENTINELLES.items()):
+            self.assertTrue(re.fullmatch(r"[0-9a-f]{64}", h),
+                            f"hash invalide pour {nom} (attendu : 64 caracteres hexa)")
+
+    def test_vital_altere_bloque(self):
+        # LE contrat cardinal : un vital altere => ok=False et exiger_sain() leve
+        # SystemExit (le frein reel du systeme). halt reste False : halt est reserve
+        # au kill-switch HALT.flag (semantique existante, verrouillee ici).
+        import contextlib
+        import io
+        import immunite
+        immunite._sha = lambda p: "0" * 64   # tous les fichiers paraissent alteres
+        v = immunite.verifier()
+        self.assertFalse(v["ok"], "un vital altere doit rendre ok=False (blocage)")
+        self.assertFalse(v["halt"], "halt reste reserve au kill-switch HALT.flag")
+        self.assertEqual(set(v["alteres"]), self.VITAUX)
+        with self.assertRaises(SystemExit, msg="exiger_sain doit stopper net si un vital est altere"):
+            with contextlib.redirect_stdout(io.StringIO()):
+                immunite.exiger_sain()
+
+    def test_sentinelle_alteree_avertit_sans_bloquer(self):
+        # Une sentinelle alteree REMONTE (alteres_sentinelle) mais ne bloque RIEN :
+        # ok reste True, halt False, alteres/manquants vides (compatibilite totale).
+        import immunite
+        vrai_sha = self._sha_origine
+        cible = next(iter(immunite.SENTINELLES))
+        immunite._sha = lambda p: ("0" * 64 if p.name == cible else vrai_sha(p))
+        v = immunite.verifier()
+        self.assertTrue(v["ok"], "une sentinelle alteree ne doit JAMAIS bloquer (ok reste True)")
+        self.assertFalse(v["halt"])
+        self.assertEqual(v["alteres"], [])
+        self.assertIn(cible, v["alteres_sentinelle"],
+                      "l'alteration d'une sentinelle doit etre remontee (alerte sans frein)")
+
+    def test_halt_flag_gele_tout(self):
+        # Le kill-switch : HALT.flag present => halt=True et ok=False, sans lister
+        # de faux alteres (c'est un gel volontaire, pas une alteration).
+        import immunite
+        immunite.HALT.write_text("gel", encoding="utf-8")
+        v = immunite.verifier()
+        self.assertTrue(v["halt"])
+        self.assertFalse(v["ok"])
+        self.assertEqual(v["alteres"], [])
+
+    def test_references_codees_en_dur_jamais_data(self):
+        # PARADE anti-boucle : les references (ATTENDUS/SENTINELLES) doivent etre des
+        # dicts LITTERAUX de constantes dans le source — donc impossibles a charger
+        # depuis data/ (que le systeme peut ecrire) ou depuis n'importe quel fichier.
+        import ast
+        import immunite
+        src = Path(immunite.__file__).read_text(encoding="utf-8")
+        trouves = {}
+        for node in ast.walk(ast.parse(src)):
+            if isinstance(node, ast.Assign):
+                for cible in node.targets:
+                    if isinstance(cible, ast.Name) and cible.id in ("ATTENDUS", "SENTINELLES"):
+                        trouves[cible.id] = node.value
+        self.assertEqual(set(trouves), {"ATTENDUS", "SENTINELLES"},
+                         "ATTENDUS et SENTINELLES doivent etre assignes au niveau module")
+        for nom, val in trouves.items():
+            self.assertIsInstance(val, ast.Dict,
+                                  f"{nom} doit etre un dict LITTERAL code en dur (pas charge d'un fichier)")
+            for k in val.keys:
+                self.assertIsInstance(k, ast.Constant, f"{nom} : cles litterales uniquement")
+                self.assertNotIn("data/", str(k.value))
+                self.assertNotIn("data\\", str(k.value))
+            for v in val.values:
+                self.assertIsInstance(v, ast.Constant,
+                                      f"{nom} : chaque hash doit etre une constante litterale")
 
 
 if __name__ == "__main__":

@@ -20,8 +20,9 @@ REGLES DURES (anti-hallu, codees, pas juste ecrites) :
      >=2 mots-cles du move (_commit_matche_move). Sinon au mieux "projet_bouge".
   3. Le LLM (etage 2) plafonne a "probablement_fait" (hypothese, confiance<1, preuve
      citee). Il ne rentre JAMAIS dans preuves[], seulement dans hypotheses[].
-  4. Aucun commit / aucun event -> "lance" (recent) ou "dormant" (>= 5 jours). Rien
-     n'est suppose.
+  4. Aucun commit / aucun event -> "lance" (recent), "dormant" (>= 5 jours), puis
+     "dormant_archive" (> 21 jours sans la moindre preuve : sort du radar quotidien
+     mais RESTE dans go_suivi.json — jamais de suppression). Rien n'est suppose.
   5. Toute hypothese LLM dont la "preuve_citee" ne reprend pas un fragment reel d'un
      commit fourni est REJETEE (_preuve_est_reelle).
 
@@ -90,6 +91,9 @@ NOMS_AFFICHAGE = {
 }
 
 JOURS_DORMANT = 5           # 0 mouvement depuis N jours -> "dormant" (fait dur, pas suppose)
+JOURS_ARCHIVE = 21          # dormant sans AUCUNE preuve depuis > N jours -> "dormant_archive" :
+                            # sort du radar quotidien (bruit) mais RESTE dans go_suivi.json et
+                            # est COMPTE dans le statut complet. Archivage = jamais suppression.
 MAX_LLM_PAR_RUN = 3         # jamais plus de N appels LLM dans un seul passage
 LLM_RATE_LIMIT_H = 24       # un go n'est re-interroge par le LLM qu'apres N heures
 LLM_COMMITS_MAX = 8         # on ne montre au LLM que les N derniers commits (prompt compact)
@@ -1153,7 +1157,7 @@ def _detail_en_cours(entree: dict) -> str:
 # ------------------------------------------------------------------------------
 
 STATUTS = ("lance", "en_cours", "projet_bouge", "probablement_fait",
-           "fait", "paye", "dormant", "skip")
+           "fait", "paye", "dormant", "dormant_archive", "skip")
 
 
 def _decider(entree: dict) -> dict:
@@ -1223,6 +1227,13 @@ def _decider(entree: dict) -> dict:
             statut = "en_cours"
             preuves.append({"type": "travail", "detail": travail["detail"],
                             "source": "git status / fichiers", "date": travail["date"]})
+        elif _jours_depuis(date_lancement) > JOURS_ARCHIVE:
+            # ARCHIVAGE (dette P2) : > 21 jours sans la MOINDRE preuve (ni confirmation,
+            # ni event, ni commit, ni travail en cours) -> le go sort de l'affichage
+            # quotidien (c'est du bruit) mais reste ENTIER dans go_suivi.json et est
+            # compte dans le statut complet. Fait dur (dates reelles comparees), pas
+            # une supposition — et JAMAIS une suppression de donnees.
+            statut = "dormant_archive"
         elif _jours_depuis(date_lancement) >= JOURS_DORMANT:
             statut = "dormant"    # >=5j sans le moindre mouvement = fait dur, pas une supposition
 
@@ -1495,8 +1506,10 @@ _ORDRE_ACTION = {"dormant": 0, "en_cours": 1, "projet_bouge": 2, "probablement_f
 
 def _go_affichage(snap: dict) -> list:
     """Go a montrer, tries par urgence d'action (ce qui demande une decision d'abord).
-    Les 'skip' sont exclus de l'affichage courant."""
-    go = [g for g in snap.get("go", []) if g["statut"] != "skip"]
+    Les 'skip' sont exclus de l'affichage courant ; les 'dormant_archive' aussi
+    (> 21j sans preuve = bruit au quotidien) — ils restent ENTIERS dans le snapshot
+    et sont COMPTES par une ligne dediee du statut complet, jamais supprimes."""
+    go = [g for g in snap.get("go", []) if g["statut"] not in ("skip", "dormant_archive")]
     go.sort(key=lambda g: _ORDRE_ACTION.get(g["statut"], 9))
     return go
 
@@ -1648,19 +1661,32 @@ def formater_section_radar(max_go: int = 4) -> str:
 
 
 def formater_statut_complet() -> str:
-    """Detail complet pour la commande Telegram 'statut' (HTML). Pied honnete si rien."""
+    """Detail complet pour la commande Telegram 'statut' (HTML). Pied honnete si rien.
+    Les go archives (dormant_archive, > 21j sans preuve) ne sont plus detailles ligne
+    a ligne : une ligne dediee les COMPTE — ils restent entiers dans go_suivi.json,
+    l'archivage n'est JAMAIS une suppression."""
     snap = rafraichir()
     go = _go_affichage(snap)
-    if not go:
+    archives = [g for g in snap.get("go", []) if g.get("statut") == "dormant_archive"]
+    if not go and not archives:
         return ("📌 <b>Suivi des go</b>\n\n"
                 "<i>Aucun go en cours. Reponds « go N » a un radar pour en lancer un.</i>")
     L = ["📌 <b>Suivi de tes go</b> — <i>prouve, sans invention</i>", "━━━━━━━━━━━━━━━"]
+    if not go:
+        L.append("")
+        L.append("<i>Aucun go actif. Reponds « go N » a un radar pour en lancer un.</i>")
     for i, g in enumerate(go, 1):
         L.append("")
         L.append(_insight(g, i))
         detail = _detail_en_cours(g)          # detail Fait/En cours/Reste (uniquement en_cours/projet_bouge)
         if detail:
             L.append(detail)
+    # Ligne dediee aux archives : un COMPTE, pas un detail (le detail reste lisible
+    # dans go_suivi.json — rien n'est supprime, c'est juste sorti du bruit quotidien).
+    if archives:
+        L.append("")
+        L.append(f"🗄 <i>{len(archives)} go archivé(s) (&gt;21j sans preuve) — "
+                 f"conservé(s) dans go_suivi.json, rien n'est supprimé.</i>")
     L.append("")
     L.append("<i>Confirme quand tu veux : « fait N », « paye N &lt;montant&gt; », « skip N ».</i>")
     return "\n".join(L)
