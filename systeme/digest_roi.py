@@ -258,7 +258,8 @@ def formater_digest(jours: int = JOURS_FENETRE) -> str:
         return (
             f"📊 <b>The Wire — bilan {jours} jours</b>\n"
             "━━━━━━━━━━━━━━━\n\n"
-            "<i>Aucun go lancé sur cette période. Réponds « go N » à un radar pour démarrer.</i>"
+            "<i>Aucun go lancé sur cette période. Réponds « go N » à un radar pour démarrer.</i>\n\n"
+            "<i>— The Wire</i>"
         )
 
     L = [
@@ -330,6 +331,11 @@ def formater_digest(jours: int = JOURS_FENETRE) -> str:
                  "Tape « paye N &lt;montant&gt; » dès qu'un move rapporte.</i>")
     else:
         L.append("<i>Chiffres 100% prouvés : « payé » ne vient que de tes confirmations, jamais d'une supposition.</i>")
+
+    # Signature commune avec le radar matinal (envoyer_telegram.format_radar) : même
+    # voix éditoriale sur les deux messages de The Wire (mission design, pt. 2).
+    L.append("")
+    L.append("<i>— The Wire</i>")
 
     return "\n".join(L)
 

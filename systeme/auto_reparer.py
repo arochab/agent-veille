@@ -2,13 +2,14 @@
 """
 auto_reparer.py — Garde-fou de DERNIER RECOURS pour que la prod ne bloque JAMAIS.
 
-Si un radar est recale par le jury pour des raisons MECANIQUES (title/pourquoi/do_now
-trop longs), ce module les raccourcit INTELLIGEMMENT (coupe a une frontiere de phrase,
-jamais au milieu d'un mot) jusqu'a ce que le jury dise GO. Deterministe, sans LLM.
+Si un radar est recale par le jury pour des raisons MECANIQUES (title/pourquoi/do_now/
+insight trop longs), ce module les raccourcit INTELLIGEMMENT (coupe a une frontiere de
+phrase, jamais au milieu d'un mot) jusqu'a ce que le jury dise GO. Deterministe, sans LLM.
 
 Il ne repare QUE la longueur (le cas le plus frequent). Le jargon / phrases creuses /
-do_now vide sont des defauts de FOND que seul le LLM peut corriger -> dans ce cas on
-renvoie False (le .bat n'envoie pas + alerte). On ne maquille jamais un vrai probleme.
+do_now vide / insight ABSENT sur le move star sont des defauts de FOND que seul le LLM
+peut corriger -> dans ce cas on renvoie False (le .bat n'envoie pas + alerte). On ne
+maquille jamais un vrai probleme (anti-hallucination : on n'invente pas un insight).
 
 Usage : python systeme/auto_reparer.py data/radar.json
   Reecrit le fichier si reparable, exit 0 si le radar passe le jury apres reparation,
@@ -28,6 +29,7 @@ import jury_clarte as jc
 TITLE_MAX = jc.TITLE_MAX
 POURQUOI_MAX = jc.POURQUOI_MAX
 DO_NOW_MAX = jc.DO_NOW_MAX
+INSIGHT_MAX = jc.INSIGHT_MAX
 
 
 def raccourcir(texte: str, maxlen: int) -> str:
@@ -55,6 +57,8 @@ def reparer_longueurs(radar: dict) -> dict:
             m["pourquoi_maintenant"] = raccourcir(m["pourquoi_maintenant"], POURQUOI_MAX)
         if isinstance(m.get("do_now"), str):
             m["do_now"] = raccourcir(m["do_now"], DO_NOW_MAX)
+        if isinstance(m.get("insight"), str):
+            m["insight"] = raccourcir(m["insight"], INSIGHT_MAX)
     return radar
 
 

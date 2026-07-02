@@ -1,0 +1,18 @@
+{
+  "_comment": "Permissions du claude -p headless PLANIFICATEUR (Fable 5) de The Wire UNIQUEMENT, appele par executer_move.py avant chaque 'go'. Passe via --settings en ligne de commande, jamais comme .claude/settings.json du repo. Le cwd de cet appel est le DOSSIER PROJET CIBLE (pas agent-earch-veille) -> Write/Edit verrouilles a PLAN-GO.md a la racine de ce cwd uniquement : meme si le move (derive de signaux externes) contenait une instruction piegee, elle ne pourrait ni executer de commande (Bash deny) ni reecrire aucun fichier du projet cible (seul PLAN-GO.md est autorise en ecriture) ni sortir du cwd (Write(../**) deny).",
+  "permissions": {
+    "allow": [
+      "Read",
+      "Write(./PLAN-GO.md)",
+      "Edit(./PLAN-GO.md)"
+    ],
+    "deny": [
+      "Write(../**)",
+      "Edit(../**)",
+      "Bash",
+      "WebFetch",
+      "WebSearch"
+    ],
+    "defaultMode": "dontAsk"
+  }
+}

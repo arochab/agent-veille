@@ -21,6 +21,7 @@ from pathlib import Path
 TITLE_MAX = 95       # caracteres : au-dela, plus scannable en 3 sec
 POURQUOI_MAX = 200
 DO_NOW_MAX = 240
+INSIGHT_MAX = 160    # SPEC-INSIGHT-2B : la lecture strategique du move, meme discipline que title
 
 # Phrases creuses : presentes n'importe ou dans le move -> bloquant.
 PHRASES_CREUSES = [
@@ -56,6 +57,17 @@ def _mot_present(mot: str, texte_folde: str) -> bool:
     return f" {mot} " in pad or pad.startswith(f" {mot} ") or pad.endswith(f" {mot} ")
 
 
+def _insight_repete_pourquoi(insight: str, pourquoi: str) -> bool:
+    """vrai si insight est du remplissage : quasi-egal a pourquoi_maintenant apres
+    normalisation, ou l'un contenu dans l'autre (cas trivial, pas de similarite floue)."""
+    fi, fp = _fold(insight).strip(), _fold(pourquoi).strip()
+    if not fi or not fp:
+        return False
+    if fi == fp:
+        return True
+    return fi in fp or fp in fi
+
+
 def juger_radar(radar: dict) -> dict:
     problemes = []
 
@@ -75,6 +87,8 @@ def juger_radar(radar: dict) -> dict:
         title = (m.get("title") or "").strip()
         pourquoi = (m.get("pourquoi_maintenant") or "").strip()
         do_now = (m.get("do_now") or "").strip()
+        insight = (m.get("insight") or "").strip()
+        est_star = (m.get("rank") == "star")
 
         # 1. title present + scannable
         if not title:
@@ -100,8 +114,19 @@ def juger_radar(radar: dict) -> dict:
                     bloc(nom, f"do_now commence par un verbe mou : '{vague}'", do_now)
                     break
 
+        # 3b. insight (SPEC-INSIGHT-2B) : optionnel SAUF pour le move star ou le
+        # prompt l'exige. Retro-compatibilite : un radar sans insight (ancien format,
+        # jours calmes, moves non-star) passe exactement comme avant.
+        if est_star and not insight:
+            bloc(nom, "insight vide (obligatoire sur le move star)")
+        elif insight:
+            if len(insight) > INSIGHT_MAX:
+                bloc(nom, f"insight trop long ({len(insight)}>{INSIGHT_MAX} car)", insight)
+            if pourquoi and _insight_repete_pourquoi(insight, pourquoi):
+                bloc(nom, "insight repete pourquoi_maintenant (remplissage, pas de lecture strategique)", insight)
+
         # 4. phrases creuses + jargon brut sur les champs visibles
-        for champ, val in (("title", title), ("pourquoi", pourquoi), ("do_now", do_now)):
+        for champ, val in (("title", title), ("pourquoi", pourquoi), ("do_now", do_now), ("insight", insight)):
             f = _fold(val)
             for creux in PHRASES_CREUSES:
                 if _fold(creux) in f:

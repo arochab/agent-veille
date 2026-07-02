@@ -260,8 +260,19 @@ def send(token: str, chat: str, html: str) -> bool:
     return True
 
 
-# Pastille colorée par projet (repère visuel rapide)
+# Pastille colorée par projet (repère visuel rapide) — même 6 couleurs ramp que la PWA
+# (DESIGN-SPEC.md §3) : l'identité du projet, jamais décorative.
 DOT = {"blue": "🔵", "teal": "🟢", "purple": "🟣", "coral": "🟠", "amber": "🟡", "gray": "⚪"}
+
+# LEXIQUE FIXE — la seule palette dont on dispose en Telegram (HTML pauvre, pas de
+# couleur ni de taille) est la hiérarchie typographique + un jeu d'emojis-signal
+# CONSTANT. Chaque emoji ne veut dire qu'UNE chose, toujours la même, jamais posé
+# pour décorer. Registre complet (pour ne pas en introduire un nouveau par accident) :
+#   📡 en-tête du radar          ⭐️ move du jour (star)      💡 insight (lecture stratégique)
+#   👉 do now (action immédiate) ⏱ meta (effort/gain)        ➡️ ensuite (prochaine étape)
+#   ♻️ aussi pour (transfert)    🎓 skill up de la semaine   📲 lien vers la PWA
+#   ☕️ jour calme                ✓  step fait (dans le plan)
+DOT_SANS_RAMP = "⚪"
 
 
 def _section_suivi_go() -> str:
@@ -277,9 +288,17 @@ def _section_suivi_go() -> str:
 
 
 def _detail_move(m: dict) -> list:
-    """Le DÉPLIÉ d'un move. Ordre voulu : POURQUOI + DO NOW d'abord (ce qui compte),
-    puis le plan complet (steps) en secondaire, puis ensuite/aussi_pour."""
+    """Le DÉPLIÉ d'un move. Ordre voulu : META (effort/gain, contexte de décision en
+    1 ligne) puis POURQUOI + DO NOW (ce qui compte), puis le plan complet (steps) en
+    secondaire, puis ensuite/aussi_pour."""
     out = []
+    if m.get("meta"):
+        # Le tag d'effort/gain écrit par le LLM (ex. "~2h · gros gain · cash tout de
+        # suite") : déjà présent dans le JSON mais jamais affiché avant — c'est le
+        # même champ que .tw-meta sur la PWA (DESIGN-SPEC.md §2), il donne le contexte
+        # de décision ("ça vaut le coup ?") avant même de lire le pourquoi.
+        out.append(f"<i>⏱ {esc(m['meta'])}</i>")
+        out.append("")
     if m.get("pourquoi_maintenant"):
         out.append(f"<b>Pourquoi maintenant :</b> {esc(m['pourquoi_maintenant'])}")
         out.append("")
@@ -346,12 +365,17 @@ def format_radar(radar: dict, pwa_url: str = "https://arochab.github.io/agent-ve
     ordered = [star_move] + [m for m in moves if m is not star_move]
 
     for m in ordered:
-        dot = DOT.get(m.get("ramp", "gray"), "⚪")
+        dot = DOT.get(m.get("ramp", "gray"), DOT_SANS_RAMP)
         star = "⭐️ " if m.get("rank") == "star" else ""
+        # Rang numéroté sur les moves 2..n (le star porte déjà ⭐️, pas besoin d'un
+        # numéro en plus) : au coup d'oeil, "tu es sur le move 2 sur 3" — même repère
+        # que le rail numéroté de la PWA (DESIGN-SPEC.md §2, "Moves 2..n"). Rang et
+        # titre dans le MÊME <b> : deux balises grasses collées casseraient la lecture.
+        rang = "" if star else f"{esc(m.get('rank',''))}. "
         L.append("")
         L.append("")   # gros espace entre les moves (style B)
         # LE PLI : titre ultra-direct (suffit à décider) + projet discret
-        L.append(f"{dot} {star}<b>{esc(m.get('title',''))}</b>")
+        L.append(f"{dot} {star}<b>{rang}{esc(m.get('title',''))}</b>")
         if m.get("projet"):
             L.append(f"<i>{esc(m.get('projet',''))}</i>")
         # LE DÉPLIÉ : pourquoi + do now + plan, replié

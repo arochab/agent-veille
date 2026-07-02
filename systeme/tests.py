@@ -124,7 +124,10 @@ class TestJury(unittest.TestCase):
         self.assertTrue(juger_radar(self._radar([]))["go"])
 
     def test_move_clair_est_go(self):
-        move = {"rank": "star", "projet": "BrandPulse",
+        # rank != 'star' ici : ce test verrouille les 3 champs historiques (title/
+        # pourquoi/do_now). L'exigence d'insight sur le star est verrouillee a part
+        # dans TestJuryInsight (SPEC-INSIGHT-2B) pour ne pas melanger les contrats.
+        move = {"rank": "2", "projet": "BrandPulse",
                 "title": "Gagne ~290 EUR avec ton app, il manque juste un prix",
                 "pourquoi_maintenant": "3 repos ont copie l'idee cette semaine mais aucun ne facture.",
                 "do_now": "Ajoute une ligne 'Rapport complet : 290 EUR' sur ta page."}
@@ -146,6 +149,78 @@ class TestJury(unittest.TestCase):
         move = {"rank": "star", "projet": "X", "title": "Vends ton rapport a 290 EUR",
                 "pourquoi_maintenant": "un fait date concret du jour", "do_now": ""}
         self.assertFalse(juger_radar(self._radar([move]))["go"], "Un move sans action doit etre bloque")
+
+
+class TestJuryInsight(unittest.TestCase):
+    """SPEC-INSIGHT-2B : le jury borne desormais le champ insight comme les autres.
+    Retro-compatibilite absolue : un radar sans insight (ancien format, jours calmes,
+    moves non-star) doit passer exactement comme avant."""
+
+    def _radar(self, moves):
+        return {"date": TODAY, "headline": "x", "moves": moves, "skill_up": "", "stats": {}}
+
+    def _move_star(self, **overrides):
+        move = {"rank": "star", "projet": "BrandPulse",
+                "title": "Gagne ~290 EUR avec ton app, il manque juste un prix",
+                "pourquoi_maintenant": "3 repos ont copie l'idee cette semaine mais aucun ne facture.",
+                "do_now": "Ajoute une ligne 'Rapport complet : 290 EUR' sur ta page.",
+                "insight": "Pari : le premier qui affiche un prix rafle les demandes."}
+        move.update(overrides)
+        return move
+
+    def test_insight_trop_long_est_no_go_puis_repare(self):
+        # Insight > 160 caracteres -> bloquant, puis auto_reparer le raccourcit -> GO.
+        long_insight = "Pari : " + ("le premier qui affiche un prix rafle toutes les demandes avant que les autres ne comprennent meme ce qui se passe sur ce marche naissant. " * 2)
+        move = self._move_star(insight=long_insight)
+        v = juger_radar(self._radar([move]))
+        self.assertFalse(v["go"], "Un insight trop long doit etre bloque")
+
+        import auto_reparer
+        radar, go = auto_reparer.reparer(self._radar([move]))
+        self.assertTrue(go, "auto_reparer doit raccourcir l'insight trop long jusqu'au GO")
+        self.assertLessEqual(len(radar["moves"][0]["insight"]), 160)
+
+    def test_star_sans_insight_est_no_go_et_non_reparable(self):
+        # LE cas critique : le move star SANS insight est bloque, et auto_reparer ne
+        # peut PAS l'inventer (anti-hallucination) -> le NO-GO persiste.
+        move = self._move_star(insight="")
+        v = juger_radar(self._radar([move]))
+        self.assertFalse(v["go"], "Un move star sans insight doit etre bloque")
+
+        import auto_reparer
+        radar, go = auto_reparer.reparer(self._radar([move]))
+        self.assertFalse(go, "auto_reparer ne doit JAMAIS inventer un insight manquant sur le star")
+
+    def test_insight_egal_pourquoi_est_no_go(self):
+        # Un insight qui repete pourquoi_maintenant mot pour mot est du remplissage.
+        move = self._move_star(
+            pourquoi_maintenant="3 repos ont copie l'idee cette semaine mais aucun ne facture.",
+            insight="3 repos ont copie l'idee cette semaine mais aucun ne facture.")
+        self.assertFalse(juger_radar(self._radar([move]))["go"],
+                         "insight == pourquoi_maintenant doit etre bloque (remplissage)")
+
+    def test_radar_valide_avec_insight_passe_go_100(self):
+        move = self._move_star()
+        v = juger_radar(self._radar([move]))
+        self.assertTrue(v["go"], "Un radar valide avec insight doit passer GO")
+        self.assertEqual(v["score"], 100)
+
+    def test_move_non_star_sans_insight_reste_go(self):
+        # Retro-compatibilite : un move non-star (rank != 'star') n'exige aucun insight.
+        move = {"rank": "2", "projet": "Y", "title": "Contacte ce lead Reddit",
+                "pourquoi_maintenant": "il cherche exactement ton service aujourd'hui",
+                "do_now": "envoie-lui un message avec ton offre"}
+        self.assertTrue(juger_radar(self._radar([move]))["go"],
+                        "Un move non-star sans insight doit rester GO (ancien format tolere)")
+
+    def test_radar_ancien_format_sans_aucun_insight_reste_go(self):
+        # Retro-compatibilite dure : aucun champ insight nulle part, aucun move star
+        # -> comportement identique a avant l'ajout du champ.
+        move = {"rank": "1", "projet": "Z", "title": "Titre clair",
+                "pourquoi_maintenant": "un fait date concret",
+                "do_now": "fais l'action concrete maintenant"}
+        self.assertTrue(juger_radar(self._radar([move]))["go"],
+                        "Un radar ancien format (aucun insight, aucun star) doit rester GO")
 
 
 class TestAutoSources(unittest.TestCase):
@@ -248,6 +323,7 @@ def main() -> int:
     suite = unittest.TestSuite()
     suite.addTests(loader.loadTestsFromTestCase(TestScoring))
     suite.addTests(loader.loadTestsFromTestCase(TestJury))
+    suite.addTests(loader.loadTestsFromTestCase(TestJuryInsight))
     suite.addTests(loader.loadTestsFromTestCase(TestAutoSources))
     suite.addTests(loader.loadTestsFromTestCase(TestReste))
     suite.addTests(loader.loadTestsFromTestCase(TestApparier))
