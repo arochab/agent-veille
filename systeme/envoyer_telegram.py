@@ -214,10 +214,12 @@ DOT = {"blue": "🔵", "teal": "🟢", "purple": "🟣", "coral": "🟠", "amber
 # couleur ni de taille) est la hiérarchie typographique + un jeu d'emojis-signal
 # CONSTANT. Chaque emoji ne veut dire qu'UNE chose, toujours la même, jamais posé
 # pour décorer. Registre complet (pour ne pas en introduire un nouveau par accident) :
-#   📡 en-tête du radar          ⭐️ move du jour (star)      💡 insight (lecture stratégique)
-#   👉 do now (action immédiate) ⏱ meta (effort/gain)        ➡️ ensuite (prochaine étape)
+#   📡 hook du jour (headline)   ⭐️ move du jour (star)      💡 insight (lecture stratégique)
+#   👉 do now (action immédiate) ⏱ meta (effort/gain, sur le PLI)  ➡️ ensuite (prochaine étape)
 #   ♻️ aussi pour (transfert)    🎓 skill up de la semaine   📲 lien vers la PWA
-#   ☕️ jour calme                ✓  step fait (dans le plan)
+#   ☕️ jour calme                ↩️ répondre (go N / fait N — le CTA)
+# (le ✓ a été retiré : il se lisait "déjà fait" alors qu'il marquait le critère
+#  de done — remplacé par "Fini quand :" en toutes lettres.)
 DOT_SANS_RAMP = "⚪"
 
 
@@ -304,17 +306,12 @@ def _section_suivi_go() -> str:
 
 
 def _detail_move(m: dict) -> list:
-    """Le DÉPLIÉ d'un move. Ordre voulu : META (effort/gain, contexte de décision en
-    1 ligne) puis POURQUOI + DO NOW (ce qui compte), puis le plan complet (steps) en
-    secondaire, puis ensuite/aussi_pour."""
+    """Le DÉPLIÉ d'un move. Ordre voulu : POURQUOI + DO NOW (ce qui compte), puis
+    le plan complet (steps) en secondaire, puis ensuite/aussi_pour.
+    La META (⏱ effort/gain) vit désormais sur le PLI (format_radar) : c'est une
+    info de DÉCISION ("je déplie ou pas ?"), la mettre ici la cachait derrière
+    le tap qu'elle est censée déclencher (audit GTM)."""
     out = []
-    if m.get("meta"):
-        # Le tag d'effort/gain écrit par le LLM (ex. "~2h · gros gain · cash tout de
-        # suite") : déjà présent dans le JSON mais jamais affiché avant — c'est le
-        # même champ que .tw-meta sur la PWA (DESIGN-SPEC.md §2), il donne le contexte
-        # de décision ("ça vaut le coup ?") avant même de lire le pourquoi.
-        out.append(f"<i>⏱ {esc(m['meta'])}</i>")
-        out.append("")
     if m.get("pourquoi_maintenant"):
         out.append(f"<b>Pourquoi maintenant :</b> {esc(m['pourquoi_maintenant'])}")
         out.append("")
@@ -340,13 +337,33 @@ def _detail_move(m: dict) -> list:
             if s.get("paste"):
                 out.append(f"<pre>{esc(s['paste'])}</pre>")
             if s.get("done"):
-                out.append(f"✓ <i>{esc(s['done'])}</i>")
+                # "Fini quand :" explicite — l'ancien "✓ ..." se lisait comme une
+                # étape DÉJÀ faite (le ✓ signale l'accompli partout ailleurs),
+                # alors que c'est le CRITÈRE de done (audit GTM, point 5).
+                out.append(f"<i>Fini quand : {esc(s['done'])}</i>")
             out.append("")
     if m.get("ensuite"):
         out.append(f"➡️ <b>Ensuite :</b> {esc(m['ensuite'])}")
     if m.get("aussi_pour"):
         out.append(f"♻️ <b>Aussi pour :</b> {esc(m['aussi_pour'])}")
     return out
+
+
+_MOIS_FR = ["janv.", "févr.", "mars", "avr.", "mai", "juin",
+            "juil.", "août", "sept.", "oct.", "nov.", "déc."]
+_JOURS_FR = ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."]
+
+
+def _date_humaine(iso: str) -> str:
+    """'2026-06-30' -> 'lun. 30 juin'. Manuel (listes FR en dur) : la locale
+    Windows du Planificateur n'est pas fiable, et une date machine dans un
+    message soigne casse le registre. Repli : la chaine brute si illisible."""
+    try:
+        from datetime import date as _d
+        d = _d.fromisoformat(str(iso)[:10])
+        return f"{_JOURS_FR[d.weekday()]} {d.day} {_MOIS_FR[d.month - 1]}"
+    except Exception:
+        return str(iso)
 
 
 def format_radar(radar: dict, pwa_url: str = "https://arochab.github.io/agent-veille/") -> str:
@@ -358,8 +375,8 @@ def format_radar(radar: dict, pwa_url: str = "https://arochab.github.io/agent-ve
     moves = radar.get("moves", [])
 
     # Style B : on aère avec des lignes vides (2 entre moves), zéro séparateur lourd.
-    L.append(f"📡 <b>THE WIRE</b>  ·  <i>{date}</i>")
     if not moves:
+        L.append(f"📡 <b>THE WIRE</b>  ·  <i>{_date_humaine(date)}</i>")
         L.append("")
         L.append("")
         L.append("☕️ <b>Rien de neuf aujourd'hui.</b>")
@@ -372,9 +389,15 @@ def format_radar(radar: dict, pwa_url: str = "https://arochab.github.io/agent-ve
         L.append("")
         L.append("<i>— The Wire</i>")
         return "\n".join(L)
+    # LE HOOK D'ABORD (audit GTM) : la preview de notification Telegram ne montre
+    # que les ~50 premiers caractères — les dépenser sur "THE WIRE · date" (que
+    # Telegram affiche DÉJÀ : nom du bot + heure) gaspillait l'accroche du jour.
+    # La headline ouvre le message ; la marque passe en 2e ligne discrète.
     if radar.get("headline"):
-        L.append("")
-        L.append(f"<i>{esc(radar['headline'])}</i>")
+        L.append(f"📡 <b>{esc(radar['headline'])}</b>")
+        L.append(f"<i>The Wire · {_date_humaine(date)}</i>")
+    else:
+        L.append(f"📡 <b>THE WIRE</b>  ·  <i>{_date_humaine(date)}</i>")
 
     # Move du jour en premier (rank=star), puis les autres par ordre du radar.
     star_move = next((m for m in moves if m.get("rank") == "star"), moves[0])
@@ -390,15 +413,27 @@ def format_radar(radar: dict, pwa_url: str = "https://arochab.github.io/agent-ve
         rang = "" if star else f"{esc(m.get('rank',''))}. "
         L.append("")
         L.append("")   # gros espace entre les moves (style B)
-        # LE PLI : titre ultra-direct (suffit à décider) + projet discret
+        # LE PLI : titre ultra-direct (suffit à décider) + qualification VISIBLE
+        # avant le tap (audit GTM) : l'effort/gain (⏱ meta) décide "je déplie ou
+        # pas" — le cacher dans le déplié forçait un tap à l'aveugle.
         L.append(f"{dot} {star}<b>{rang}{esc(m.get('title',''))}</b>")
-        if m.get("projet"):
-            L.append(f"<i>{esc(m.get('projet',''))}</i>")
+        sous = esc(m.get("projet", ""))
+        if m.get("meta"):
+            sous = f"{sous} · ⏱ {esc(m['meta'])}" if sous else f"⏱ {esc(m['meta'])}"
+        if sous:
+            L.append(f"<i>{sous}</i>")
         # LE DÉPLIÉ : pourquoi + do now + plan, replié
         detail = _detail_move(m)
         if detail:
             body = "\n".join(x for x in detail).strip()
             L.append(f"<blockquote expandable>{body}</blockquote>")
+
+    # LA CONVERSION (audit GTM) : le geste attendu — répondre « go N » — n'était
+    # écrit NULLE PART. Un radar sans call-to-action est une newsletter ; avec,
+    # c'est un bon de commande. Une seule ligne, après les moves, jamais répétée.
+    L.append("")
+    L.append("")
+    L.append("↩️ <b>Réponds « go 1 »</b> (ou 2, 3…) — le plan d'exécution se prépare tout seul.")
 
     if radar.get("skill_up"):
         L.append("")
@@ -411,10 +446,13 @@ def format_radar(radar: dict, pwa_url: str = "https://arochab.github.io/agent-ve
         L.append("")
         L.append(suivi)
 
+    # Libellé honnête (audit GTM) : la page publique n'affiche que la DÉMO tant
+    # que le vrai radar n'est pas publié (données privées, choix assumé) —
+    # « Radar complet » promettait plus que la page ne donne.
     L.append("")
     L.append("")
-    L.append(f'📲 <a href="{pwa_url}">Radar complet</a>')
-    L.append("<i>— The Wire · ton fil, chaque matin</i>")
+    L.append(f'📲 <a href="{pwa_url}">L\'app The Wire</a>')
+    L.append("<i>— The Wire</i>")
     return "\n".join(L)
 
 

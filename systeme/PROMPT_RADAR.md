@@ -17,9 +17,11 @@ répondre à 3 questions — s'il en manque une, il saute :
    ORDRE (si X arrive, la niche Y s'ouvre/se ferme), un AVANTAGE FACTUEL d'Adam (il a
    déjà l'actif que les autres commencent). **Test des 3 mois** : si le move était déjà
    vrai il y a 3 mois, ce n'est pas une fenêtre. C'est ce qui remplit "Rivals miss".
-2. **Le cash-path** : en une phrase, comment ce move devient de l'argent et en combien
-   de temps — et quel est le PREMIER euro le plus court. L'étape 1 doit être le pas le
-   plus court vers un paiement quand le move est cash, pas une action de confort.
+2. **Le cash-path** : en une phrase, comment ce move devient de l'argent, QUI paie
+   (nomme l'acheteur aussi précisément que les signaux le permettent — un move cash
+   sans acheteur nommé est un vœu), en combien de temps — et quel est le PREMIER euro
+   le plus court. L'étape 1 doit être le pas le plus court vers un paiement quand le
+   move est cash, pas une action de confort.
 3. **La répétition (scale)** : si ça marche une fois, ce qui se répète ou s'automatise.
    C'est ce qui remplit "Unlocks next". Un gain one-shot se dit honnêtement.
 

@@ -1596,12 +1596,16 @@ def _insight(g: dict, num: int) -> str:
         return (f"🟡 {tete} — <b>probablement fait</b> (hypothèse, {int(g.get('confiance',0)*100)}%). "
                 f"Indice : « {_safe_html(pr)[:50]} ». Confirme avec « fait {num} » si c'est bon.")
     if s == "en_cours":
+        # Pas d'impératif « dis fait N » ici : la consigne vit UNE fois en pied de
+        # section (radar) ou dans le pied de « statut » — la répéter sur chaque
+        # ligne sonnait robotique (audit GTM, point 6).
         return (f"🛠️ {tete} — <b>tu bosses dessus</b>, lancé {_quand(g)}. "
-                f"Pas encore de commit figé. Continue, ou dis « fait {num} » quand c'est shippé.")
+                f"Pas encore de commit figé.")
     if s == "projet_bouge":
+        n_c = int(g.get("commits_depuis_go", 0) or 0)
+        commits = f"{n_c} commit" + ("s" if n_c > 1 else "")
         return (f"🔨 {tete} — <b>ça avance</b>, lancé {_quand(g)}, le projet bouge "
-                f"({g.get('commits_depuis_go',0)} commit(s)) mais rien qui prouve ce move précis. "
-                f"Termine-le, ou dis « fait {num} ».")
+                f"({commits}) mais rien qui prouve ce move précis.")
     if s == "dormant":
         return (f"💤 {tete} — <b>dormant</b> : lancé {_quand(g)}, zéro mouvement depuis. "
                 f"À relancer, ou classe-le avec « skip {num} ».")
@@ -1658,7 +1662,11 @@ def formater_section_radar(max_go: int = 4) -> str:
             L.append(recent)
     reste = len(go) - max_go
     if reste > 0:
-        L.append(f"<i>+ {reste} autre(s). Ecris « statut » pour tout voir.</i>")
+        L.append(f"<i>+ {reste} autre(s).</i>")
+    # UNE seule ligne de commandes pour toute la section (les lignes de go ne
+    # repetent plus chacune leur imperatif — audit GTM : moins robotique, et le
+    # geste attendu reste visible exactement une fois).
+    L.append("<i>↩️ « fait N » quand c'est shippé · « statut » pour le détail</i>")
     return "\n".join(L)
 
 

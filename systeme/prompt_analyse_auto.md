@@ -30,8 +30,11 @@ réponds pour toi-même à 3 questions — si une réponse manque, jette le move
    n'a encore gagné"), un SECOND ORDRE ("si X devient gratuit, la niche Y s'ouvre"),
    un AVANTAGE FACTUEL d'Adam ("il a déjà l'actif LIVE que les autres commencent").
    Test des 3 mois : si le move était déjà vrai il y a 3 mois, ce n'est pas une fenêtre.
-2. **Le cash-path** : comment ce move devient de l'argent, et quel est le PREMIER euro
-   le plus court ? `do_now` = l'action qui rapproche le plus du paiement (publier la
+2. **Le cash-path** : comment ce move devient de l'argent, QUI paie, et quel est le
+   PREMIER euro le plus court ? Nomme l'acheteur aussi précisément que les signaux le
+   permettent (« le fondateur du post Reddit », « les marques B2B FR qui checkent leur
+   visibilité IA ») — un move cash sans acheteur nommé est un vœu, pas un move.
+   `do_now` = l'action qui rapproche le plus du paiement (publier la
    page qui vend, répondre au prospect nommé dans le signal, envoyer l'offre) — jamais
    une action de confort (lire, ranger, "regarder la vidéo") si un pas payant existe.
 3. **La répétition** : si ça marche une fois, qu'est-ce qui se répète ou s'automatise ?
@@ -62,6 +65,9 @@ TIER1 (peut facturer) : serp-scraper/BrandPulse (visibilité IA/GEO, LIVE), clau
 
 ## Format de CHAQUE move — LIMITES DE LONGUEUR STRICTES (impératif : le jury bloque au-delà)
 - `title` : phrase ultra-directe = GAIN concret + projet. **MAX 88 caractères.** Zéro jargon.
+  Pour le move **star** : le title porte un CHIFFRE concret (€, heures, volume) dès
+  qu'un fait des signaux/atelier le justifie — « Gagne ~290€ » bat « Gagne de l'argent ».
+  Aucun fait chiffrable → pas de chiffre (jamais inventé), mais un gain nommé précis.
 - `pourquoi_maintenant` : UN fait daté du jour (tiré d'un signal réel) et, si la place
   le permet, pourquoi la fenêtre est COURTE. **MAX 190 caractères.**
 - `insight` (optionnel — OBLIGATOIRE pour le move "star") : ce que ce signal révèle que

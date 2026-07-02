@@ -52,10 +52,10 @@ ATTENDUS = {
 # (verifier) et affichee en avertissement (main). Re-signature : --signer.
 SENTINELLES = {
     "executer_move.py": "f4ea37d39a200ffe23853b7df236c97ff20aa58646a5b0c84545a82ebd56a324",
-    "envoyer_telegram.py": "eaf23ec8f4d05a0f6000fced302cce50f17109162c0bd0438f7bdb587712e780",
+    "envoyer_telegram.py": "0d7a431ee43cdc12a44d9f141d3422953b91718a19dad21ace9b0c2192ee7c30",
     "collecte_signaux.py": "23aa79b05c1be28e921aa3dd2defbcbb95cfb93d3b8c1ecbf3601dd072693ea0",
-    "suivi_go.py": "a82aecb5a45994fc2603bd93a4a6c6c41706f771bc69cd42ef1d3826754cda61",
-    "digest_roi.py": "f3513438453c93f2997c48a714be84469a8312b2bdc76a7570806ffb115c59a6",
+    "suivi_go.py": "86d5f1044193339d5ffda58e58812bb3a610197f60f0ecd164bbdb95106b05c3",
+    "digest_roi.py": "2e2c12495a7dbda2aaeee156481e9cd6849a5986baac36444c0cf668537e960e",
     "atomic_io.py": "c6af95a6d098c0f24ca77ba72b7946e39b620dd4b0ec74b00704328c6137b06c",
     "config_projets.py": "0adcaeaf70e80e3f9c3c70501928755115a2fa31568c4d52b345dbc9ddd25f0d",
 }

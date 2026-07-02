@@ -279,22 +279,41 @@ def formater_digest(jours: int = JOURS_FENETRE) -> str:
     # confirme paye, pour que les sous-lignes s'additionnent exactement au total
     # (jamais 5+3+8+3=19 pour 16 lances).
     nb_fait_non_paye = d["nb_fait"] - d["nb_paye"]
+    montant_str = f"{d['total_confirme_euros']:.0f}€" if d["total_confirme_euros"] > 0 else ""
     L = [
         f"📊 <b>The Wire — bilan {jours} jours</b>",
         "━━━━━━━━━━━━━━━",
         "",
-        f"🚀 <b>{d['nb_lances']}</b> go lancé(s) → dont :",
-        f"   ✅ {nb_fait_non_paye} shippé(s) (pas encore payé confirmé)",
     ]
-    if d["nb_paye"] > 0:
-        montant_str = f"{d['total_confirme_euros']:.0f}€" if d["total_confirme_euros"] > 0 else ""
-        L.append(f"   💶 {d['nb_paye']} payé(s)" + (f" — <b>{montant_str} confirmés</b>" if montant_str else ""))
+    if d["nb_lances"] < 4:
+        # PETITS NOMBRES = UNE PHRASE (audit GTM) : un tableau de ventilation pour
+        # 2-3 go, c'est de la comptabilite bureaucratique — a cette echelle, le
+        # momentum se dit en une ligne humaine. La ventilation ne revient qu'a
+        # partir de 4 go, quand elle aide vraiment a s'y retrouver. Meme rigueur
+        # MECE : chaque segment est disjoint, la somme = le total.
+        seg = []
+        if d["nb_paye"] > 0:
+            seg.append(f"{d['nb_paye']} payé" + ("s" if d["nb_paye"] > 1 else "")
+                       + (f" (<b>{montant_str} confirmés</b>)" if montant_str else ""))
+        if nb_fait_non_paye > 0:
+            seg.append(f"{nb_fait_non_paye} shippé" + ("s" if nb_fait_non_paye > 1 else ""))
+        if d["nb_en_cours"] > 0:
+            seg.append(f"{d['nb_en_cours']} en cours qui bouge" + ("nt" if d["nb_en_cours"] > 1 else ""))
+        if d["nb_dormant"] > 0:
+            seg.append(f"{d['nb_dormant']} dormant" + ("s" if d["nb_dormant"] > 1 else ""))
+        pluriel = "s" if d["nb_lances"] > 1 else ""
+        L.append(f"🚀 <b>{d['nb_lances']}</b> go lancé{pluriel} cette semaine — " + " · ".join(seg) + ".")
     else:
-        L.append("   💶 0 payé confirmé pour l'instant")
-    if d["nb_en_cours"] > 0:
-        L.append(f"   🔨 {d['nb_en_cours']} en cours")
-    if d["nb_dormant"] > 0:
-        L.append(f"   💤 {d['nb_dormant']} dormant(s) — à relancer ou classer")
+        L.append(f"🚀 <b>{d['nb_lances']}</b> go lancé(s) → dont :")
+        L.append(f"   ✅ {nb_fait_non_paye} shippé(s) (pas encore payé confirmé)")
+        if d["nb_paye"] > 0:
+            L.append(f"   💶 {d['nb_paye']} payé(s)" + (f" — <b>{montant_str} confirmés</b>" if montant_str else ""))
+        else:
+            L.append("   💶 0 payé confirmé pour l'instant")
+        if d["nb_en_cours"] > 0:
+            L.append(f"   🔨 {d['nb_en_cours']} en cours")
+        if d["nb_dormant"] > 0:
+            L.append(f"   💤 {d['nb_dormant']} dormant(s) — à relancer ou classer")
 
     # Detail nomme (point 3) : substance pilotable, pas juste un chiffre.
     # TENUE A L'ECHELLE : chaque section est plafonnee (top MAX_DETAIL_PAR_SECTION) —
@@ -315,7 +334,8 @@ def formater_digest(jours: int = JOURS_FENETRE) -> str:
         L.append("")
         L.append("<b>En cours :</b>")
         for e in tetes:
-            trace = f"{e['commits']} commit(s)" if e["commits"] else "pas encore de trace"
+            n_c = int(e["commits"] or 0)
+            trace = (f"{n_c} commit" + ("s" if n_c > 1 else "")) if n_c else "pas encore de trace"
             L.append(f"   · {esc(e['projet'])} — {trace}")
         if k:
             L.append(f"   <i>… et {k} autre(s)</i>")
