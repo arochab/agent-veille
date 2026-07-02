@@ -1,42 +1,54 @@
 {
-  "date": "2026-06-29",
-  "headline": "Two of your assets (BrandPulse, Claude Eats Tokens) are being cloned this week by 0-3 star repos. Same lesson: measure then ship the fix. Rivals only measure. That's your edge.",
+  "date": "2026-06-30",
+  "headline": "Deux de tes apps se font copier cette semaine, mais personne ne les vend encore. À toi de jouer le premier.",
   "moves": [
     {
       "rank": "star",
       "projet": "BrandPulse",
       "ramp": "blue",
-      "icone": "ti-target",
-      "meta": "~2h · High gain · cash now",
-      "title": "Turn your free checker into a paid 290€ report",
-      "intro": "BrandPulse already does 80% of this (generate_report.py + index.html are live). You add a fix-list + a price, not a rebuild.",
+      "meta": "~2h · gros gain · cash tout de suite",
+      "title": "Gagne ~290€ : ton app BrandPulse peut déjà vendre ce rapport, il manque juste un prix",
+      "pourquoi_maintenant": "3 repos ont copié l'idée cette semaine, mais aucun ne facture le rapport. La demande existe, l'offre payante non.",
+      "do_now": "Ajoute cette ligne sous le titre de brandpulse-app.onrender.com (fichier index.html) : « Rapport complet + plan de correction : 290€, livré en 48h. »",
       "steps": [
-        { "t": "Add a 'fix list' to the report", "how": "Paste into Claude Code:", "paste": "In generate_report.py, add a section 'Top 3 fixes to get cited by AI' — per missing query: the gap + one concrete action (schema / content / entity). Keep my existing style.", "done": "report.html shows 3 fixes under the score" },
-        { "t": "Put a price on the landing", "how": "Add one line under the headline in index.html:", "paste": "Free score in 60s. Full report + fix plan: 290€ — delivered in 48h.", "done": "price is live on brandpulse-app.onrender.com" },
-        { "t": "Get 1 buyer signal (no code)", "how": "Run BrandPulse on 3 FR B2B brands, DM each founder (swap [X]):", "paste": "J'ai checké la visibilité de [X] dans ChatGPT vs vos concurrents — voici le rapport. Le plan de correction, je le fais pour 290€. Ça vous intéresse ?", "done": "3 DMs sent · 1 reply = validated" }
+        { "t": "Mets un prix sur la page", "how": "Ajoute une ligne sous le titre dans index.html :", "paste": "Score gratuit en 60s. Rapport complet + plan de correction : 290€, livré en 48h.", "done": "le prix est en ligne sur brandpulse-app.onrender.com" },
+        { "t": "Ajoute la liste des corrections au rapport (ce qui justifie les 290€)", "how": "Colle dans Claude Code :", "paste": "Dans generate_report.py, ajoute une section « Top 3 corrections pour être cité par l'IA » : pour chaque requête manquante, le manque + une action concrète. Garde mon style actuel.", "done": "report.html affiche 3 corrections sous le score" },
+        { "t": "Cherche 1 premier acheteur (sans code)", "how": "Lance BrandPulse sur 3 marques B2B FR, envoie ce DM à chaque fondateur (remplace [X]) :", "paste": "J'ai checké la visibilité de [X] dans ChatGPT face à vos concurrents — voici le rapport. Le plan de correction, je le fais pour 290€. Ça vous intéresse ?", "done": "3 DMs envoyés · 1 réponse = c'est validé" }
       ],
-      "unlocks": "1 paying client → 79€/mo monitoring (recurring = the real money).",
-      "miss": "Profound/Peec only measure. You ship the fix (you generate code). Lead with it.",
-      "cross": "Same 'measure → fix' playbook powers the Claude Eats Tokens move. Build it once, reuse twice."
+      "ensuite": "Si 1 client paie une fois → propose-lui le suivi à 79€/mois (l'argent qui revient tout seul, c'est le vrai jackpot).",
+      "aussi_pour": "Le même coup — mesurer puis vendre la correction — sert aussi Claude Eats Tokens."
     },
     {
       "rank": "2",
       "projet": "Claude Eats Tokens",
       "ramp": "teal",
-      "icone": "ti-coins",
-      "meta": "A few days · High gain",
-      "title": "Pick the ONE wedge the 3 clones don't have",
-      "intro": "3 trackers shipped in 8 days. Don't match features — take the angle they're weak on: forecasting.",
+      "meta": "quelques jours · bon gain",
+      "title": "3 apps copient la tienne cette semaine — sors la seule qui prévient AVANT de bloquer",
+      "pourquoi_maintenant": "Les 3 copies comptent ce qui est déjà dépensé. Aucune ne prévient quand tu vas atteindre la limite. C'est ce qui manque à tout le monde.",
+      "do_now": "Mets cette phrase en titre de ta PWA : « Sache si tu peux continuer — avant de toucher la limite. »",
       "steps": [
-        { "t": "Study the leader's math", "how": "Open cctally's README, copy its cost-per-percent formula into a note.", "paste": "", "done": "you can state in 1 sentence how cctally computes cost — and where it's loose" },
-        { "t": "Write your wedge on the landing", "how": "Add to index.html (PWA):", "paste": "Know if you can keep going — before you hit the limit. Forecasts your 5h window, not just past spend.", "done": "the forecast promise is the H1 on your PWA" },
-        { "t": "Post the cost-expert angle", "how": "One LinkedIn post. Hook:", "paste": "The hidden cost of Claude Code: most devs can't see it until the limit hits. Here's how I forecast mine →", "done": "1 post live, links to your PWA" }
+        { "t": "Comprends comment le leader compte", "how": "Ouvre le README de cctally, note sa formule de coût en 1 phrase.", "paste": "", "done": "tu sais dire en 1 phrase comment cctally calcule, et où il se trompe" },
+        { "t": "Écris ta promesse sur la page", "how": "Ajoute en titre de la PWA :", "paste": "Sache si tu peux continuer — avant de toucher la limite. On prévoit ta fenêtre de 5h, pas juste le passé.", "done": "la promesse est le gros titre de ta PWA" }
       ],
-      "unlocks": "Reframes you from 'made a tracker' to 'I quantify LLM cost' — a hireable skill.",
-      "miss": "All 3 clones report the past. None forecast the future window. Forecasting is the wedge.",
-      "cross": ""
+      "ensuite": "Une fois la promesse posée, un post LinkedIn te positionne comme « le mec qui mesure le coût de l'IA » — utile pour vendre des audits.",
+      "aussi_pour": ""
+    },
+    {
+      "rank": "3",
+      "projet": "Pacto Club",
+      "ramp": "coral",
+      "meta": "20 min · sans code",
+      "title": "Quelqu'un cherche à louer du matériel DJ sur Reddit — contacte-le, c'est exactement ton client",
+      "pourquoi_maintenant": "Un post Reddit d'hier : une personne cherche à louer du matériel DJ et ne trouve personne. C'est pile le besoin que Pacto résout.",
+      "do_now": "Réponds au post avec un message simple : « Je monte un service pour ça à Paris, je peux t'aider — c'est quoi ton besoin exact ? »",
+      "steps": [
+        { "t": "Lis le post en entier", "how": "Ouvre le lien Reddit, repère la ville et le matériel cherché.", "paste": "", "done": "tu sais quoi il cherche et où" },
+        { "t": "Contacte la personne", "how": "Réponds ou envoie un message privé :", "paste": "Salut ! Je monte justement un service de prêt de matériel DJ entre passionnés à Paris. C'est quoi ton besoin exact ? Je peux peut-être t'aider tout de suite.", "done": "1 message envoyé" }
+      ],
+      "ensuite": "Si la personne répond, tu as ton premier vrai cas d'usage Pacto — note tout ce qu'elle dit, c'est de l'or pour ton produit.",
+      "aussi_pour": ""
     }
   ],
-  "skill_up": "GEO (Generative Engine Optimization = how a brand shows up inside AI answers). 1h on the 'best GEO tools 2026' list + one demo, then write one paragraph defining it. Upgrades your pitch and your CV at once.",
-  "stats": { "fresh": 2, "cut": 9, "demo": true }
+  "skill_up": "Comprendre le GEO (faire en sorte que les IA comme ChatGPT recommandent une marque) en 1h. Ça rend ton pitch BrandPulse plus fort ET ça fait bien sur ton CV.",
+  "stats": { "fresh": 135, "cut": 9, "demo": true }
 }

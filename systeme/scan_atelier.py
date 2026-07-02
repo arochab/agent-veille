@@ -24,8 +24,13 @@ VEILLE_ROOT = HERE.parent                        # .../agent-earch-veille
 ATELIER = VEILLE_ROOT.parent                     # .../Adam CHABBI Pro
 OUT = VEILLE_ROOT / "data" / "atelier.json"
 
-# Dossiers à ignorer (pas des projets)
-SKIP = {"agent-earch-veille", "archive", "_SECURITY", ".git", "node_modules", "__pycache__"}
+# Dossiers à ignorer (pas des projets) : système, archives, backups, perso.
+SKIP = {"agent-earch-veille", "archive", "_SECURITY", ".git", "node_modules",
+        "__pycache__", ".claude", "vol-fatbike"}
+
+# Exceptions à la règle "ignorer les dossiers commençant par _" :
+# ce sont de VRAIS projets dont le nom commence par _ (à inclure quand même).
+GARDER_MALGRE_UNDERSCORE = {"_chief-of-staff-admin"}
 
 # Fichiers de contexte lus en priorité pour décrire le projet
 DOC_FILES = ["PROJECT-STATUS.md", "CONTEXT.md", "README.md", "CLAUDE.md"]
@@ -62,6 +67,23 @@ def git_last_commit(proj: Path) -> str | None:
         return out or None
     except Exception:
         return None
+
+
+def git_avancement(proj: Path, n: int = 5, jours: int = 14) -> list[str]:
+    """Messages des n derniers commits des `jours` derniers jours = EN QUOI Adam a
+    avance concretement. Vide si pas de git. C'est la donnee brute que la routine
+    du matin resume en 1 phrase (couche 'avancement projet')."""
+    if not (proj / ".git").exists():
+        return []
+    try:
+        r = subprocess.run(
+            ["git", "-C", str(proj), "log", f"-{n}",
+             f"--since={jours} days ago", "--format=%s"],
+            capture_output=True, text=True, timeout=10, encoding="utf-8", errors="replace",
+        )
+        return [ln.strip() for ln in (r.stdout or "").splitlines() if ln.strip()]
+    except Exception:
+        return []
 
 
 def detect_stack(proj: Path) -> list[str]:
@@ -109,10 +131,60 @@ def newest_mtime(proj: Path) -> str:
     return datetime.fromtimestamp(newest, tz=timezone.utc).date().isoformat()
 
 
+def _ressemble_a_un_projet(entry: Path) -> bool:
+    """FUTURE-PROOF & INCLUSIF : un dossier est un projet s'il contient du CONTENU DE
+    TRAVAIL, quel que soit son nom ou son type (code, docs, ops, notes...). Comme ca,
+    tout nouveau projet est capte tout seul, qu'il soit un repo de code OU un dossier
+    de strategie/docs. On n'exclut que les dossiers VIDES ou purement media/perso.
+    Signe d'un projet = au moins un fichier .md/.txt/.ps1/.py/.html/.json OU un .git
+    OU un sous-dossier de travail. Un dossier sans aucun de ces signes (que des images,
+    ou rien) n'est pas un projet."""
+    try:
+        items = list(entry.iterdir())
+    except Exception:
+        return False
+    if not items:
+        return False  # dossier vide
+    noms = {p.name for p in items}
+    if ".git" in noms:
+        return True
+    # Extensions "de travail" : un projet en contient au moins une.
+    exts_travail = {".md", ".txt", ".py", ".ps1", ".js", ".ts", ".html", ".json",
+                    ".sql", ".sh", ".bat", ".css", ".svelte", ".tsx", ".jsx", ".yaml", ".yml"}
+    for p in items:
+        if p.is_file() and p.suffix.lower() in exts_travail:
+            return True
+    # Sinon, un sous-dossier de travail (pas juste un dossier d'images) suffit.
+    for p in items:
+        if p.is_dir() and p.name.lower() not in {"images", "img", "photos", "media", "assets"}:
+            return True
+    return False
+
+
+def _est_projet(entry: Path) -> bool:
+    """Vrai si ce dossier doit etre surveille. On exclut le bruit connu (systeme,
+    archives, backups, perso), puis on garde tout ce qui RESSEMBLE a un projet —
+    independamment du nom, pour que les NOUVEAUX projets soient pris automatiquement."""
+    nom = entry.name
+    if nom in SKIP:
+        return False
+    bas = nom.lower()
+    if "backup" in bas or bas.startswith("_backup"):
+        return False
+    # Exceptions explicites (vrais projets en _ qu'on veut malgre tout).
+    if nom in GARDER_MALGRE_UNDERSCORE:
+        return True
+    # Les dossiers caches systeme (.qqch) ne sont pas des projets.
+    if nom.startswith("."):
+        return False
+    # Sinon : c'est un projet SI ca en a les signes (git/doc/code). Future-proof.
+    return _ressemble_a_un_projet(entry)
+
+
 def scan() -> dict:
     projets = []
     for entry in sorted(ATELIER.iterdir()):
-        if not entry.is_dir() or entry.name in SKIP or entry.name.startswith("_"):
+        if not entry.is_dir() or not _est_projet(entry):
             continue
         doc = ""
         doc_source = None
@@ -131,6 +203,7 @@ def scan() -> dict:
             "git": bool((entry / ".git").exists()),
             "dernier_commit": git_last_commit(entry),
             "derniere_activite": newest_mtime(entry),
+            "avancement_recent": git_avancement(entry),  # EN QUOI Adam a avance (commits 14j)
             "a_doc": doc_source is not None,
         })
     return {

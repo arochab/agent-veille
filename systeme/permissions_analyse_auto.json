@@ -1,0 +1,20 @@
+{
+  "_comment": "Permissions du claude -p headless de The Wire UNIQUEMENT (analyser_auto.bat). Passe via --settings en ligne de commande, jamais comme .claude/settings.json du repo -> les sessions interactives normales (toi, dans VS Code) restent totalement libres. Write/Edit verrouilles a data/ : meme si un titre de signal piegeait le prompt, il ne pourrait reecrire aucun code (systeme/*.py, immunite.py compris).",
+  "permissions": {
+    "allow": [
+      "Read",
+      "Write(./data/**)",
+      "Edit(./data/**)"
+    ],
+    "deny": [
+      "Write(./systeme/**)",
+      "Edit(./systeme/**)",
+      "Write(../**)",
+      "Edit(../**)",
+      "Bash",
+      "WebFetch",
+      "WebSearch"
+    ],
+    "defaultMode": "dontAsk"
+  }
+}
