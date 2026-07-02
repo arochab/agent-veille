@@ -84,10 +84,13 @@ def juger_radar(radar: dict) -> dict:
             bloc(f"move#{idx+1}", "move non-dict")
             continue
         nom = m.get("projet") or (m.get("title", "") or "")[:30] or f"move#{idx+1}"
-        title = (m.get("title") or "").strip()
-        pourquoi = (m.get("pourquoi_maintenant") or "").strip()
-        do_now = (m.get("do_now") or "").strip()
-        insight = (m.get("insight") or "").strip()
+        # str(...) avant .strip() : un LLM peut produire un champ non-string
+        # (insight:42 au lieu d'une string) -> le jury (organe VITAL) ne doit
+        # JAMAIS crasher dessus, il doit juger (et au pire bloquer proprement).
+        title = str(m.get("title") or "").strip()
+        pourquoi = str(m.get("pourquoi_maintenant") or "").strip()
+        do_now = str(m.get("do_now") or "").strip()
+        insight = str(m.get("insight") or "").strip()
         est_star = (m.get("rank") == "star")
 
         # 1. title present + scannable
@@ -115,10 +118,16 @@ def juger_radar(radar: dict) -> dict:
                     break
 
         # 3b. insight (SPEC-INSIGHT-2B) : optionnel SAUF pour le move star ou le
-        # prompt l'exige. Retro-compatibilite : un radar sans insight (ancien format,
-        # jours calmes, moves non-star) passe exactement comme avant.
-        if est_star and not insight:
-            bloc(nom, "insight vide (obligatoire sur le move star)")
+        # prompt l'exige. RETRO-COMPATIBILITE REELLE (bug trouve par le jury de la
+        # nuit du 2026-07-02 : bloquer TOUT star sans insight cassait les radars
+        # deja en prod avant ce champ -> un cerveau qui produirait par accident
+        # l'ancien format se ferait NO-GO persistant, alerte inutile). La regle ne
+        # s'applique QUE si le radar utilise deja le format insight quelque part
+        # (au moins un move, star ou non, porte le champ) : sinon c'est un radar
+        # d'avant cette fonctionnalite, jamais bloque sur son absence.
+        radar_connait_insight = any(str(mm.get("insight") or "").strip() for mm in moves if isinstance(mm, dict))
+        if est_star and not insight and radar_connait_insight:
+            bloc(nom, "insight vide (obligatoire sur le move star, un autre move de ce radar en a un)")
         elif insight:
             if len(insight) > INSIGHT_MAX:
                 bloc(nom, f"insight trop long ({len(insight)}>{INSIGHT_MAX} car)", insight)

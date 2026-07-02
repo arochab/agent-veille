@@ -39,7 +39,14 @@ Set-Content -LiteralPath $moveMd -Value ($entete + $contenu) -Encoding UTF8
 $planGoMd = Join-Path $ProjetDir "PLAN-GO.md"
 $digestConsigne = "QUAND jai valide et que tu as fini dagir : ecris a la RACINE du projet un fichier THE-WIRE-DIGEST.md qui raconte FACTUELLEMENT ce que tu as fait, avec les sections ## FAIT / ## RESTE / ## LIENS / ## NOTE, une action par puce - , separateur ' :: ' entre laction et sa preuve (chemin de fichier, ou commit sha7, ou action externe), prefixe optionnel [step N]. Ninvente rien : ne mets en FAIT que ce que tu as reellement ecrit ou commite."
 if ($PlanGoOk -and (Test-Path -LiteralPath $planGoMd)) {
-  $instruction = "Lis le fichier PLAN-GO.md a la racine de ce projet. C'est le plan prepare par mon planificateur strategique (Fable) pour un move repere par mon radar de veille The Wire. EXECUTE-le etape par etape tel que decrit dans la section PLAN D'ETAPES. Si quelque chose ne colle pas a l'etat reel du projet, dis-le-moi avant d'agir. $digestConsigne"
+  # CORRIGE (bug trouve par le jury de la nuit du 2026-07-02) : la tache VS Code
+  # ci-dessous lance TOUJOURS Claude avec --permission-mode plan (garantie voulue
+  # par Adam, executer_move.py ligne 11 : "double garantie qu'aucun fichier n'est
+  # touche sans le OK d'Adam devant la fenetre" — INTOUCHABLE). L'instruction disait
+  # "EXECUTE-le etape par etape", ce qui etait FAUX : le mode plan empeche
+  # mecaniquement toute modification sans validation. Le texte doit dire la verite
+  # sur ce qui va reellement se passer, pas la promesse du pipeline a deux cerveaux.
+  $instruction = "Lis le fichier PLAN-GO.md a la racine de ce projet. C'est le plan prepare par mon planificateur strategique (Fable) pour un move repere par mon radar de veille The Wire. Ce plan est deja pret et detaille (section PLAN D'ETAPES) : PROPOSE-moi de le suivre tel quel (ou signale ce qui ne colle pas a l'etat reel du projet), puis ATTENDS ma validation avant de modifier quoi que ce soit. $digestConsigne"
 } else {
   $instruction = "Lis le fichier THE-WIRE-MOVE.md a la racine de ce projet. Il decrit un move repere par mon radar de veille The Wire. Propose-moi un PLAN daction concret pour lexecuter, puis ATTENDS ma validation avant de modifier quoi que ce soit. $digestConsigne"
 }

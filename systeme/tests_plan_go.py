@@ -62,10 +62,21 @@ class TestAppelPlanificateur(unittest.TestCase):
         self._orig_run = subprocess.run
         subprocess.run = _run_capture
         self.tmp = Path(tempfile.mkdtemp(prefix="thewire_plango_", dir=str(ROOT / "data")))
+        # ISOLATION DATA/ PRODUCTION (3e site trouve par le jury de la nuit du
+        # 2026-07-02 : cette classe est la PREMIERE a ecrire reellement
+        # em.MOVE_POUR_PLAN, via lancer_planificateur_fable() appele directement
+        # par test_appel_exact / test_move_avec_instruction_piegee_reste_donnee).
+        self._move_backup = None
+        if em.MOVE_POUR_PLAN.exists():
+            self._move_backup = em.MOVE_POUR_PLAN.read_bytes()
 
     def tearDown(self):
         subprocess.run = self._orig_run
         shutil.rmtree(self.tmp, ignore_errors=True)
+        if self._move_backup is not None:
+            em.MOVE_POUR_PLAN.write_bytes(self._move_backup)
+        elif em.MOVE_POUR_PLAN.exists():
+            em.MOVE_POUR_PLAN.unlink()
 
     def test_appel_exact(self):
         move = _move_test()
@@ -128,10 +139,21 @@ class TestRepliSurEchec(unittest.TestCase):
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp(prefix="thewire_plango_", dir=str(ROOT / "data")))
         self._orig_run = subprocess.run
+        # ISOLATION DATA/ PRODUCTION (meme fix que TestGoCompletSimule) :
+        # test_traiter_go_survit_a_echec_planificateur appelle le VRAI traiter_go(),
+        # qui ecrit em.MOVE_POUR_PLAN (data/_move_pour_plan.json) avant meme que
+        # l'echec simule intervienne.
+        self._move_backup = None
+        if em.MOVE_POUR_PLAN.exists():
+            self._move_backup = em.MOVE_POUR_PLAN.read_bytes()
 
     def tearDown(self):
         subprocess.run = self._orig_run
         shutil.rmtree(self.tmp, ignore_errors=True)
+        if self._move_backup is not None:
+            em.MOVE_POUR_PLAN.write_bytes(self._move_backup)
+        elif em.MOVE_POUR_PLAN.exists():
+            em.MOVE_POUR_PLAN.unlink()
 
     def test_timeout_replie_proprement(self):
         def _run_timeout(cmd, cwd=None, **kw):
@@ -225,11 +247,24 @@ class TestGoCompletSimule(unittest.TestCase):
         self.tmp = Path(tempfile.mkdtemp(prefix="thewire_plango_go_", dir=str(ROOT / "data")))
         self._orig_run = subprocess.run
         self._orig_popen = subprocess.Popen
+        # ISOLATION DATA/ PRODUCTION (bug trouve par le jury de la nuit du
+        # 2026-07-02) : traiter_go() ecrit REELLEMENT em.MOVE_POUR_PLAN
+        # (data/_move_pour_plan.json, fichier de production, memoire de passage
+        # du poller reel) avant meme que subprocess.run soit appele -> ce test
+        # ecrasait ce fichier sans le restaurer. Sauvegarde/restauration a
+        # l'identique de ce que fait deja tests.py ailleurs sur data/*.json.
+        self._move_backup = None
+        if em.MOVE_POUR_PLAN.exists():
+            self._move_backup = em.MOVE_POUR_PLAN.read_bytes()
 
     def tearDown(self):
         subprocess.run = self._orig_run
         subprocess.Popen = self._orig_popen
         shutil.rmtree(self.tmp, ignore_errors=True)
+        if self._move_backup is not None:
+            em.MOVE_POUR_PLAN.write_bytes(self._move_backup)
+        elif em.MOVE_POUR_PLAN.exists():
+            em.MOVE_POUR_PLAN.unlink()
 
     def test_go_complet_plan_go_ok_transmis_au_ps1(self):
         radar = {"date": "2026-07-02", "moves": [dict(_move_test(), rank="star")]}
@@ -271,7 +306,12 @@ class TestGoCompletSimule(unittest.TestCase):
         args = popen_args[0]
         self.assertIn(str(em.LANCEUR), args)
         self.assertIn("-PlanGoOk", args, "le .ps1 doit recevoir -PlanGoOk quand le plan a reussi")
-        self.assertTrue(any("Plan Fable pret" in m for m in messages))
+        # Message corrige (jury de la nuit du 2026-07-02) : "l'executer etape par
+        # etape" etait faux (Sonnet demarre en --permission-mode plan, propose et
+        # attend l'OK d'Adam, comme sans plan Fable) -> le texte reel dit "propose"
+        # et "attend ton OK", jamais qu'il execute seul.
+        self.assertTrue(any("plan detaille" in m and "attend ton OK" in m for m in messages),
+                        f"message go attendu absent ou perime : {messages}")
 
 
 class TestPermissionsEtTemplate(unittest.TestCase):

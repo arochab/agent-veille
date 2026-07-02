@@ -762,10 +762,15 @@ def traiter_go(token: str, chat: str, n: int) -> None:
     # ecrit a cet instant (etape 1, avant ce message) -> ne jamais dire "il n'ecrit
     # rien avant ton OK" dans ce cas, ce serait faux (jury produit, corrige).
     if plan_go_ok:
+        # CORRIGE (jury de la nuit du 2026-07-02) : "l'executer etape par etape"
+        # etait faux -> Sonnet demarre en --permission-mode plan (garantie voulue,
+        # executer_move.py:11), il PROPOSE de suivre le plan Fable et ATTEND ton OK,
+        # exactement comme sans plan Fable. Seule la difference reelle : le plan
+        # est deja pret (pas a inventer par Sonnet), pas le fait qu'il agisse seul.
         msg = (f"Je lance Claude Code sur {projet} pour le move #{n}. "
-               "Fable a deja depose un brouillon de plan (PLAN-GO.md) dans le "
-               "dossier - rien d'autre n'est ecrit. Sonnet va le lire et l'executer "
-               "etape par etape.")
+               "Fable a deja depose un plan detaille (PLAN-GO.md) dans le dossier "
+               "- rien d'autre n'est ecrit. Sonnet te le propose et attend ton OK "
+               "avant d'agir.")
     else:
         msg = (f"Je lance Claude Code sur {projet} pour le move #{n}. "
                "Plan Fable indisponible : il va lire le projet et te proposer un "

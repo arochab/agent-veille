@@ -181,15 +181,43 @@ class TestJuryInsight(unittest.TestCase):
         self.assertLessEqual(len(radar["moves"][0]["insight"]), 160)
 
     def test_star_sans_insight_est_no_go_et_non_reparable(self):
-        # LE cas critique : le move star SANS insight est bloque, et auto_reparer ne
-        # peut PAS l'inventer (anti-hallucination) -> le NO-GO persiste.
+        # LE cas critique : dans un radar qui UTILISE deja le format insight (un
+        # autre move en porte un), le move star SANS insight est bloque, et
+        # auto_reparer ne peut PAS l'inventer (anti-hallucination) -> NO-GO persiste.
+        # (Bug corrige le 2026-07-02 : bloquer un radar a UN SEUL move star sans
+        # insight cassait la retro-compatibilite sur les radars d'avant ce champ,
+        # deux d'entre eux etaient reellement en echec en prod -> voir
+        # test_star_sans_insight_seul_dans_radar_ancien_format_reste_go ci-dessous.)
+        autre = {"rank": "2", "projet": "Y", "title": "Contacte ce lead Reddit",
+                 "pourquoi_maintenant": "il cherche exactement ton service aujourd'hui",
+                 "do_now": "envoie-lui un message avec ton offre",
+                 "insight": "Pari : ce canal Reddit convertit mieux que les autres."}
         move = self._move_star(insight="")
-        v = juger_radar(self._radar([move]))
-        self.assertFalse(v["go"], "Un move star sans insight doit etre bloque")
+        v = juger_radar(self._radar([move, autre]))
+        self.assertFalse(v["go"], "Un move star sans insight doit etre bloque quand le radar utilise deja ce format")
 
         import auto_reparer
-        radar, go = auto_reparer.reparer(self._radar([move]))
+        radar, go = auto_reparer.reparer(self._radar([move, autre]))
         self.assertFalse(go, "auto_reparer ne doit JAMAIS inventer un insight manquant sur le star")
+
+    def test_star_sans_insight_seul_dans_radar_ancien_format_reste_go(self):
+        # RETRO-COMPATIBILITE (le vrai bug du 2026-07-02) : un radar dont AUCUN move
+        # ne porte le champ insight (le star y compris) est un radar d'avant cette
+        # fonctionnalite -> ne doit jamais etre bloque sur son absence. Verifie sur
+        # les 2 radars REELLEMENT envoyes en production avant ce champ.
+        move = self._move_star(insight="")
+        v = juger_radar(self._radar([move]))
+        self.assertTrue(v["go"], "Un radar ou AUCUN move n'a d'insight (ancien format) doit rester GO")
+
+        import json
+        from pathlib import Path
+        racine = Path(__file__).resolve().parent.parent
+        for nom in ("2026-06-30_radar.json", "2026-07-01_radar.json"):
+            chemin = racine / "briefs" / nom
+            if chemin.exists():
+                radar_reel = json.loads(chemin.read_text(encoding="utf-8"))
+                self.assertTrue(juger_radar(radar_reel)["go"],
+                                f"radar reel de prod {nom} (sans champ insight) doit rester GO")
 
     def test_insight_egal_pourquoi_est_no_go(self):
         # Un insight qui repete pourquoi_maintenant mot pour mot est du remplissage.

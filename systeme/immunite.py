@@ -39,8 +39,8 @@ HALT = ROOT / "data" / "HALT.flag"
 # Pour les regenerer apres un changement VOULU : python systeme/immunite.py --ref-now
 # puis coller les valeurs ici a la main.
 ATTENDUS = {
-    "tests.py":        "204618500c98d0baf79354415003a0880bd454ff2d2eb938eb8ffb7e947a5ef3",
-    "jury_clarte.py":  "4bc0fb626df5c47303a3f9abf56087acc9e714bb175985fd86c52410fdc3b4dc",
+    "tests.py":        "3d3c3ab341a0307cbc7bf9b7aa764715b5995ed5d2704b6801d58e089a5ef59b",
+    "jury_clarte.py":  "fc555766cbc3f5a0def8767951e46024d579592cb651bfe66a34eabf871921c4",
     "scoring.py":      "6f1d30de2bb60c42c6314b9b0b7942372f0be47838a05a043a85c487c3249a5a",
     "auto_sources.py": "e6d8085a824eca3e67f58e7788d36f31cc2f3625facf3ecb18417be8565cb162",
     "feedback.py":     "6f1ef69c63ce593fd95ff471fcf7a1f18e10e3c20e4c0decee892434544e31e6",
@@ -51,7 +51,7 @@ ATTENDUS = {
 # Une alteration ici ne coupe RIEN : elle est remontee dans 'alteres_sentinelle'
 # (verifier) et affichee en avertissement (main). Re-signature : --signer.
 SENTINELLES = {
-    "executer_move.py": "f4ea37d39a200ffe23853b7df236c97ff20aa58646a5b0c84545a82ebd56a324",
+    "executer_move.py": "c7c2eb1f07a73ab05208b2484766e9ebce84e4df0c5062205166f6d1d939760e",
     "envoyer_telegram.py": "0d7a431ee43cdc12a44d9f141d3422953b91718a19dad21ace9b0c2192ee7c30",
     "collecte_signaux.py": "23aa79b05c1be28e921aa3dd2defbcbb95cfb93d3b8c1ecbf3601dd072693ea0",
     "suivi_go.py": "86d5f1044193339d5ffda58e58812bb3a610197f60f0ecd164bbdb95106b05c3",
