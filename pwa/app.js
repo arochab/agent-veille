@@ -134,7 +134,7 @@
     var suffix = m[2] ? "/" + m[2].replace(/[\s\/]+/g, "") : "";
     /* rest peut légitimement être vide (titre réduit au montant) : le rendu
        masque alors le sous-titre au lieu de dupliquer le montant (M1). */
-    var rest = t.replace(m[0], " ").replace(/\s*[:—–-]\s*/, " ").replace(/\s{2,}/g, " ").trim();
+    var rest = t.replace(m[0], " ").replace(/\s*[:‒–—―−-]\s*/, " ").replace(/\s{2,}/g, " ").trim();
     return { num: num, suffix: suffix, rest: rest };
   }
 

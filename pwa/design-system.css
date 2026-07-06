@@ -741,7 +741,7 @@ button.tw-step__num::after { content: ""; position: absolute; inset: -14px -16px
   transition: none;
 }
 .tw-move__chev::before { content: "+"; }
-.tw-move.is-open .tw-move__chev::before { content: "−"; }
+.tw-move.is-open .tw-move__chev::before { content: "-"; }
 .tw-move.is-open .tw-move__chev, .tw-move--star .tw-move__chev { transform: none; }
 
 @keyframes tw-breathe {
