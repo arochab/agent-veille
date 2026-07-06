@@ -4,14 +4,15 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>The Wire — radar du matin</title>
-<!-- Thème sombre par défaut (spec DA §6), variante claire automatique.
-     Chaque meta porte son media : sans lui, la première matcherait TOUJOURS
-     (premier-qui-matche-gagne) et la variante claire serait morte.
-     La dernière, sans media, est le repli des navigateurs qui l'ignorent. -->
-<meta name="theme-color" content="#131210" media="(prefers-color-scheme: dark)" />
-<meta name="theme-color" content="#F0EEE6" media="(prefers-color-scheme: light)" />
-<meta name="theme-color" content="#131210" />
-<meta name="color-scheme" content="dark light" />
+<!--
+  DIRECTION « LE CALIBRE » — dark-only, ASSUMÉ (voir manifeste complet dans
+  pwa/design-system.css §0 et la maquette de référence da-explorations/direction-a.html).
+  Un instrument est calibré pour SA condition de lecture (téléphone, 10h, une
+  main) : une variante claire diluerait l'économie du signal jaune et
+  doublerait la surface de maintenance pour zéro euro de plus. Donc UNE seule
+  meta theme-color, pas de media prefers-color-scheme. -->
+<meta name="color-scheme" content="dark" />
+<meta name="theme-color" content="#0B0D10" />
 <link rel="manifest" href="pwa/manifest.json" />
 <link rel="apple-touch-icon" href="pwa/icon-192.png" />
 <!-- Zéro CDN, zéro font externe : tout est local, la PWA vit sans réseau. -->
@@ -23,19 +24,22 @@
   <header class="tw-hdr">
     <div class="tw-hdr__row">
       <div class="tw-brand">
-        <img class="tw-logo" src="assets/the-wire-logo.png" alt="" width="28" height="28" />
-        <span class="tw-brand__name">The Wire</span>
+        <img class="tw-logo" src="assets/the-wire-logo.png" alt="" width="20" height="20" />
+        <span class="tw-brand__name">The&nbsp;Wire</span>
       </div>
       <span class="tw-hdr__date" id="date"></span>
     </div>
+    <div class="tw-ruler" aria-hidden="true"></div>
 
-    <!-- Headline du jour (serif). Squelette pendant le chargement, jamais de spinner. -->
+    <!-- Headline du jour. Squelette pendant le chargement, jamais de spinner. -->
     <div class="tw-skeleton tw-skeleton--headline" id="headline-skeleton" aria-hidden="true"></div>
     <h1 class="tw-headline" id="headline" hidden></h1>
 
-    <div class="tw-stats" id="stats" hidden></div>
+    <ul class="tw-stats" id="stats" hidden></ul>
     <div id="banner-zone"></div>
   </header>
+
+  <div class="tw-ruler" aria-hidden="true"></div>
 
   <main id="moves" aria-busy="true" aria-label="Moves du jour">
     <div class="tw-moves" aria-hidden="true">
@@ -44,14 +48,21 @@
     </div>
   </main>
 
+  <!-- Tes go en cours : pipeline local (voir pwa/app.js). Rien n'est envoyé
+       au poller réel — c'est un miroir visuel du rituel Telegram, en localStorage. -->
+  <section class="tw-gos" id="gos-section" hidden aria-label="Tes go en cours">
+    <div id="gos-list"></div>
+  </section>
+
   <section class="tw-skill" id="skill" hidden>
-    <div class="tw-skill__label">Skill up de la semaine</div>
+    <div class="tw-skill__label">Skill up — cette semaine</div>
     <p id="skill-text"></p>
   </section>
 
+  <div class="tw-ruler" aria-hidden="true"></div>
   <footer class="tw-foot" id="foot"></footer>
 
-  <!-- Annonces pour lecteurs d'écran (copie, chargement) -->
+  <!-- Annonces pour lecteurs d'écran (copie, chargement, go) -->
   <div class="visually-hidden" role="status" aria-live="polite" id="live"></div>
 </div>
 

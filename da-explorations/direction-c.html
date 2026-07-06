@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>The Wire — Direction C · ESCA, leurre abyssal</title>
+<style>
+/* ==========================================================================
+   DIRECTION C — « ESCA » (le leurre abyssal)
+   L'ORGANISME : le radar est une présence agentique vivante.
+   Il vit dans l'abysse (bleu-noir profond, PAS le charbon chaud de la v1),
+   il respire (battement 320ms toutes les 4s), il a un système nerveux
+   (la colonne + dendrites), et il porte UNE seule lumière vive :
+   l'esca — le leurre bioluminescent — réservée au geste « go ».
+   Dark-only assumé : l'organisme est abyssal, une variante claire
+   tuerait les halos calculés qui font sa profondeur (argumenté au manifeste).
+
+   FONTES : 100% système. system-ui pour la prose, ui-monospace pour
+   toute la télémétrie (labels, chiffres, verdict). Zéro serif.
+
+   CONTRASTES — tous les ratios ci-dessous sont CALCULÉS (WCAG 2.1,
+   luminance relative, arrondi au centième) et notés « x.xx:1 vs fond ».
+   Pire cas composites vérifiés (l'eau = glace #C8E4EE, alpha 0.05,
+   PAS la couleur d'action — zéro fuite d'accent) :
+   · sur --abysse-0 → compose #0F161D : texte-1 16.48:1 · texte-2 9.81:1
+     · texte-3 5.86:1 · --go 11.46:1 · --nerf 3.49:1
+   · sur --abysse-1 → compose #141E27 : texte-1 15.26:1 · texte-3 5.43:1
+     · --nerf 3.23:1
+   · fin du dégradé star #0D1822 : texte-1 16.22:1 · texte-2 9.66:1
+     · texte-3 5.77:1 · --go 11.28:1 · --nerf 3.43:1 · ramp blue 6.32:1
+   Tout passe.
+
+   ACCENT UNIQUE (--go) : exactement 2 familles de sélecteurs.
+     1. .go-cta      (le leurre : bouton d'action + ses états)
+     2. .go-vif      (le pipeline vivant : étape active après un go)
+   Aucune autre règle ne consomme --go. Grep-vérifiable.
+
+   AUDIT MOTION — chaque animation est mappée à un état, 160–500ms :
+     · battement (dot vital + étape pipeline active) : 320ms de pulse
+       actives dans un cycle de 4s (systole/repos) — état « agent vivant /
+       exécution en cours ». Indicateur de statut, pas un décor.
+     · dépliage move/steps : 240ms — état « déplier le tier 2 ».
+     · copie : 180ms — état « texte copié ».
+     · go : 320ms de morph bouton + impulsion 480ms le long du nerf —
+       état « ordre transmis au pipeline ».
+     · arrivée : fade-rise 400ms, une fois — état « transmission reçue ».
+     prefers-reduced-motion : TOUT est coupé, les états restent lisibles
+     statiquement (le dot vital reste plein, l'étape active reste cyan).
+   ========================================================================== */
+
+:root {
+  /* --- Fontes système only --- */
+  --corps: system-ui, "Segoe UI Variable Text", "Segoe UI", -apple-system, Roboto, sans-serif;
+  --tele: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+
+  /* --- L'abysse (surfaces) --- */
+  --abysse-0: #050B12;   /* la page : bleu-noir profond, pas de charbon chaud */
+  --abysse-1: #0B141D;   /* organe : bloc star, pipeline */
+  --abysse-2: #122029;   /* inset : blocs paste, chips */
+
+  /* --- Texte (encre d'eau froide) --- */
+  --texte-1: #ECF5F9;   /* 17.87:1 vs abysse-0 · 16.78:1 vs abysse-1 · 15.02:1 vs abysse-2 */
+  --texte-2: #A9C2CF;   /* 10.63:1 vs abysse-0 ·  9.99:1 vs abysse-1 ·  8.94:1 vs abysse-2 */
+  --texte-3: #7C96A4;   /*  6.35:1 vs abysse-0 ·  5.97:1 vs abysse-1 ·  5.34:1 vs abysse-2 */
+  --paste-encre: #D9EAF2; /* 13.45:1 vs abysse-2 — texte des blocs à coller */
+
+  /* --- L'ESCA : l'unique lumière vive. Propriété exclusive du go. --- */
+  --go: #59DDFF;        /* 12.43:1 vs abysse-0 · 11.67:1 vs abysse-1 · 10.45:1 vs abysse-2 (texte OK) */
+  --go-encre: #04121B;  /* 11.93:1 vs --go — texte posé SUR le leurre */
+
+  /* --- Anatomie --- */
+  --nerf: #527086;      /* 3.78:1 vs abysse-0 · 3.55:1 vs abysse-1 · 3.23:1 pire cas composite — colonne + dendrites (UI >= 3:1) */
+  --membrane: #263642;  /* 1.59:1 vs abysse-0 — bordure DÉCORATIVE uniquement, jamais porteuse de sens */
+
+  /* --- Échelle typo (mobile-first 390px) --- */
+  --fs-verdict: 72px;  --lh-verdict: 1;    /* le gain, lisible à 2 mètres */
+  --fs-hook: 21px;     --lh-hook: 1.4;     /* headline du jour, sans-serif */
+  --fs-titre: 16px;    --lh-titre: 1.35;   /* titres de move */
+  --fs-corps: 15px;    --lh-corps: 1.55;   /* prose */
+  --fs-sub: 13px;      --lh-sub: 1.5;      /* how, done, secondaire */
+  --fs-tele: 11px;     --lh-tele: 1.4;     /* télémétrie mono uppercase */
+  --ls-tele: 0.14em;                       /* tracking signature de la télémétrie */
+
+  /* --- Espacements (échelle 4px) --- */
+  --e1: 4px; --e2: 8px; --e3: 12px; --e4: 16px; --e5: 24px; --e6: 32px; --e7: 48px;
+
+  /* --- Mouvement --- */
+  --sortie: cubic-bezier(0.22, 1, 0.36, 1);
+  --d-copie: 180ms; --d-pli: 240ms; --d-go: 320ms; --d-nerf: 480ms; --d-arrivee: 400ms;
+}
+
+/* Rampes projet : consommées UNIQUEMENT par l'anneau du noeud synaptique
+   et le nom du projet. Désaturées exprès : la couleur code le projet
+   (secondaire), jamais la décision. Ratios calculés :
+   blue  #7B9CC4 → 6.96:1 vs abysse-0 · 6.53:1 vs abysse-1 (texte + UI OK)
+   teal  #74BDB4 → 9.11:1 vs abysse-0 · 8.55:1 vs abysse-1
+   coral #C49788 → 7.65:1 vs abysse-0 · 7.18:1 vs abysse-1 */
+[data-ramp="blue"]  { --ramp: #7B9CC4; }
+[data-ramp="teal"]  { --ramp: #74BDB4; }
+[data-ramp="coral"] { --ramp: #C49788; }
+[data-ramp="purple"], [data-ramp="amber"], [data-ramp="gray"] { --ramp: var(--texte-3); }
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { background: var(--abysse-0); }
+
+body {
+  font-family: var(--corps);
+  font-size: var(--fs-corps);
+  line-height: var(--lh-corps);
+  color: var(--texte-2);
+  background: var(--abysse-0);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Profondeur et lumière : l'eau au-dessus de l'organisme.
+   Glace #C8E4EE (désaturée, PAS l'accent) <= 5% d'alpha — pires cas
+   composites re-vérifiés en tête de feuille. Ni flat mort, ni glassmorphism. */
+body::before {
+  content: "";
+  position: fixed; inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(90% 40% at 50% -12%, rgba(200, 228, 238, 0.05), transparent 62%),
+    radial-gradient(70% 34% at 12% 108%, rgba(200, 228, 238, 0.03), transparent 60%);
+  z-index: 0;
+}
+
+.cadre {
+  position: relative;
+  z-index: 1;
+  max-width: 430px;
+  margin: 0 auto;
+  padding: var(--e4) var(--e4) var(--e7);
+}
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px;
+  margin: -1px; padding: 0; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+:focus-visible { outline: 2px solid var(--texte-1); outline-offset: 2px; }
+
+/* --- Télémétrie : le geste typographique systématique ---
+   Tout label = mono, uppercase, tracking 0.14em, chiffres tabulaires.
+   L'organisme parle en signes vitaux. */
+.tele {
+  font-family: var(--tele);
+  font-size: var(--fs-tele);
+  line-height: var(--lh-tele);
+  letter-spacing: var(--ls-tele);
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  color: var(--texte-3); /* 6.35:1 vs abysse-0 · 5.97:1 vs abysse-1 · 5.34:1 vs abysse-2 */
+}
+
+/* ==========================================================================
+   EN-TÊTE : identité + signes vitaux
+   ========================================================================== */
+.tete { padding-bottom: var(--e4); }
+
+.tete-rang1 {
+  display: flex; align-items: center; gap: var(--e3);
+  justify-content: space-between;
+}
+
+.marque {
+  font-family: var(--tele);
+  font-size: 15px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--texte-1); /* 17.87:1 vs abysse-0 */
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* L'électrocardiogramme : micro-imperfection assumée — battements
+   irréguliers dessinés à la main, l'antidote au lissé génératif. */
+.ecg { color: var(--texte-3); flex: 1; min-width: 0; }
+.ecg svg { display: block; width: 100%; max-width: 150px; height: 18px; margin-left: auto; }
+
+.vitals {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: var(--e1) var(--e3);
+  margin-top: var(--e3);
+}
+
+/* Le coeur : battement 320ms / cycle 4s — état « agent vivant ».
+   Statique (plein) en reduced-motion : le statut reste lisible. */
+.coeur {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--texte-2);
+  flex: none;
+  animation: battement 4s infinite;
+}
+
+@keyframes battement {
+  0%   { transform: scale(1);    opacity: 0.55; }
+  4%   { transform: scale(1.45); opacity: 1; }    /* systole : 160ms */
+  8%   { transform: scale(1);    opacity: 0.55; } /* diastole : 160ms */
+  100% { transform: scale(1);    opacity: 0.55; }
+}
+
+.chip-demo {
+  border: 1px solid var(--membrane); /* décoratif */
+  background: var(--abysse-2);
+  color: var(--texte-2); /* 8.94:1 vs abysse-2 */
+  padding: 3px 8px;
+}
+
+/* ==========================================================================
+   HOOK : la transmission du matin
+   ========================================================================== */
+.transmission { padding: var(--e4) 0 var(--e5); }
+
+.hook {
+  margin-top: var(--e2);
+  font-size: var(--fs-hook);
+  line-height: var(--lh-hook);
+  font-weight: 700;
+  color: var(--texte-1); /* 17.87:1 vs abysse-0 */
+  letter-spacing: -0.01em;
+  max-width: 34ch;
+}
+
+/* ==========================================================================
+   LA COLONNE : le système nerveux de l'organisme.
+   Un nerf vertical (1px, 3.22:1) relie les noeuds synaptiques des moves
+   jusqu'au pipeline. Les dendrites (traits horizontaux) accrochent
+   chaque label au nerf. Signature n&b : anatomie, pas décoration.
+   ========================================================================== */
+.corps-radar { position: relative; padding-left: var(--e5); }
+
+.nerf {
+  position: absolute;
+  left: 5px; top: 6px; bottom: 0;
+  width: 1px;
+  background: var(--nerf); /* 3.22:1 vs abysse-0 */
+}
+
+/* Impulsion : une lumière descend le nerf quand un ordre part.
+   480ms, une fois — état « ordre transmis ». */
+.nerf::after {
+  content: "";
+  position: absolute; left: -1px; top: -120px;
+  width: 3px; height: 120px;
+  background: linear-gradient(to bottom, transparent, rgba(236, 245, 249, 0.9));
+  opacity: 0;
+}
+.nerf.is-impulse::after { animation: descente var(--d-nerf) var(--sortie) 1; }
+@keyframes descente {
+  0%   { opacity: 0; transform: translateY(0); }
+  15%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(90vh); }
+}
+
+/* Noeud synaptique : chaque move est un organe branché sur le nerf. */
+.move { position: relative; margin-bottom: var(--e5); }
+
+.move::before {
+  content: "";
+  position: absolute;
+  left: calc(5px - var(--e5)); top: 14px; /* centré sur le nerf (x = 5px du cadre) */
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--abysse-0);
+  border: 2px solid var(--ramp, var(--texte-3)); /* anneaux >= 6.3:1 vs fonds (UI >= 3:1) */
+  transform: translateX(-50%);
+}
+
+.move--star::before {
+  width: 13px; height: 13px; top: 12px;
+  box-shadow: 0 0 12px rgba(236, 245, 249, 0.35); /* halo calculé, décoratif */
+}
+
+/* Dendrite : le trait qui accroche un label au nerf.
+   Part du nerf (x = 5px du cadre) et s'arrête 6px avant le label. */
+.dendrite { position: relative; }
+.dendrite::before {
+  content: "";
+  position: absolute;
+  left: calc(5px - var(--e5)); top: 0.65em;
+  width: 13px; height: 1px;
+  background: var(--nerf);
+}
+/* Dans l'organe star, le label est décalé de 17px de plus
+   (bordure 1px + padding 16px) : la dendrite s'allonge pour
+   toujours toucher le nerf. */
+.organe .dendrite::before { left: -36px; width: 30px; }
+
+/* ==========================================================================
+   MOVE STAR : l'organe principal, déplié
+   ========================================================================== */
+.move--star .organe {
+  background: linear-gradient(180deg, var(--abysse-1), #0D1822);
+  border: 1px solid var(--membrane); /* décoratif */
+  padding: var(--e4);
+  margin-top: var(--e3);
+}
+
+.move-id {
+  display: flex; flex-wrap: wrap; align-items: baseline;
+  gap: var(--e1) var(--e3);
+  min-height: 24px;
+}
+.move-id .projet { color: var(--ramp, var(--texte-2)); font-weight: 700; }
+.move-id .rang { color: var(--texte-1); } /* 17.87:1 vs abysse-0 */
+
+/* --- LE VERDICT : 72px, mono tabulaire, lisible à 2 mètres --- */
+.verdict { margin-top: var(--e4); }
+
+.verdict-gain {
+  font-family: var(--tele);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-verdict);
+  line-height: var(--lh-verdict);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--texte-1); /* 16.78:1 vs abysse-1 */
+  text-shadow: 0 0 24px rgba(236, 245, 249, 0.22); /* lueur, décorative */
+}
+.verdict-gain .approx { font-size: 0.5em; vertical-align: 0.55em; color: var(--texte-2); /* 9.99:1 vs abysse-1 */ }
+
+.mission {
+  margin-top: var(--e3);
+  font-size: var(--fs-titre);
+  line-height: var(--lh-titre);
+  font-weight: 650;
+  color: var(--texte-1); /* 16.78:1 vs abysse-1 */
+  max-width: 36ch;
+}
+
+.bloc { margin-top: var(--e5); }
+.bloc .tele { display: block; margin-bottom: var(--e2); }
+.bloc p { color: var(--texte-2); /* 9.99:1 vs abysse-1 · 10.63:1 vs abysse-0 */ }
+.bloc p strong { color: var(--texte-1); font-weight: 650; }
+
+/* ==========================================================================
+   LE LEURRE — .go-cta : famille d'accent n°1 (sur 2).
+   L'unique lumière vive de l'interface. Théâtre du geste.
+   ========================================================================== */
+.go-cta {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%;
+  min-height: 56px; /* cible >= 44px */
+  margin-top: var(--e4);
+  padding: 0 var(--e4);
+  background: var(--go);
+  color: var(--go-encre); /* 11.93:1 vs --go */
+  border: 1px solid var(--go);
+  border-radius: 2px;
+  font-family: var(--tele);
+  font-size: 12px;
+  letter-spacing: var(--ls-tele);
+  text-transform: uppercase;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 0 28px rgba(89, 221, 255, 0.30), 0 0 6px rgba(89, 221, 255, 0.35); /* le halo du leurre */
+  transition: background var(--d-go) var(--sortie), color var(--d-go) var(--sortie), box-shadow var(--d-go) var(--sortie);
+}
+.go-cta .fleche { font-family: var(--tele); }
+.go-cta:active { transform: translateY(1px); }
+.go-cta.is-sent {
+  background: transparent;
+  color: var(--go); /* 11.67:1 vs abysse-1 · 12.43:1 vs abysse-0 */
+  box-shadow: none;
+  cursor: default;
+}
+.go-note { margin-top: var(--e2); font-size: var(--fs-sub); color: var(--texte-3); /* 5.97:1 vs abysse-1 */ }
+
+/* --- INSIGHT : le moment théâtral. L'organisme pense à voix haute. --- */
+.insight {
+  margin-top: var(--e5);
+  padding: var(--e4);
+  border: 1px solid var(--nerf); /* 3.55:1 vs abysse-1 · 3.43:1 vs #0D1822 */
+  background: radial-gradient(120% 130% at 50% 0%, rgba(200, 228, 238, 0.05), transparent 70%);
+}
+.insight p {
+  font-size: 17px; line-height: 1.45;
+  font-weight: 600;
+  color: var(--texte-1); /* pire cas composite halo : 16.59:1 */
+}
+
+/* --- STEPS : tier 2 --- */
+.steps { list-style: none; counter-reset: etape; }
+.step { padding: var(--e4) 0; border-top: 1px solid var(--membrane); /* décoratif */ }
+.step:first-child { border-top: 0; }
+.step-t {
+  display: flex; gap: var(--e3); align-items: baseline;
+  color: var(--texte-1); font-weight: 650; font-size: var(--fs-corps);
+}
+.step-t::before {
+  counter-increment: etape;
+  content: "0" counter(etape);
+  font-family: var(--tele);
+  font-size: var(--fs-tele);
+  letter-spacing: var(--ls-tele);
+  color: var(--texte-3); /* 5.97:1 vs abysse-1 */
+  flex: none;
+}
+.step-how { margin-top: var(--e2); font-size: var(--fs-sub); color: var(--texte-2); }
+.step-done { margin-top: var(--e2); font-size: var(--fs-sub); color: var(--texte-2); }
+.step-done .tele { display: inline; margin-right: var(--e2); }
+
+/* Bloc à coller : la matière brute, tier 3. */
+.paste {
+  margin-top: var(--e3);
+  background: var(--abysse-2);
+  border: 1px solid var(--membrane); /* décoratif */
+  border-radius: 2px;
+}
+.paste pre {
+  font-family: var(--tele);
+  font-size: 13px; line-height: 1.55;
+  color: var(--paste-encre); /* 13.45:1 vs abysse-2 */
+  white-space: pre-wrap; word-break: break-word;
+  padding: var(--e3);
+}
+.copier {
+  display: flex; align-items: center; gap: var(--e2);
+  width: 100%;
+  min-height: 44px; /* cible >= 44px */
+  padding: 0 var(--e3);
+  background: transparent;
+  border: 0; border-top: 1px solid var(--membrane);
+  color: var(--texte-2); /* 8.94:1 vs abysse-2 */
+  font-family: var(--tele);
+  font-size: var(--fs-tele);
+  letter-spacing: var(--ls-tele);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color var(--d-copie) var(--sortie);
+}
+.copier.is-done { color: var(--texte-1); /* 15.02:1 vs abysse-2 */ }
+
+/* ==========================================================================
+   MOVES REPLIÉS (2, 3) : organes au repos
+   ========================================================================== */
+.move-pli {
+  display: block; width: 100%;
+  min-height: 56px; /* cible >= 44px */
+  padding: var(--e3) 0;
+  background: transparent;
+  border: 0; border-top: 1px solid var(--membrane); /* décoratif */
+  text-align: left;
+  cursor: pointer;
+  color: var(--texte-2);
+  font: inherit;
+}
+.move-pli .move-id { min-height: 0; }
+.move-pli .titre {
+  display: flex; gap: var(--e3); align-items: baseline;
+  margin-top: var(--e2);
+  font-size: var(--fs-titre); line-height: var(--lh-titre);
+  font-weight: 650;
+  color: var(--texte-1); /* 17.87:1 vs abysse-0 */
+}
+.move-pli .pli {
+  flex: none; margin-left: auto;
+  font-family: var(--tele); font-size: 16px;
+  color: var(--texte-3); /* 6.35:1 vs abysse-0 */
+  transition: transform var(--d-pli) var(--sortie);
+}
+.move.is-open .move-pli .pli { transform: rotate(45deg); }
+
+/* Dépliage : grid 0fr -> 1fr, 240ms — état « ouvrir le tier 2 ». */
+.move-corps {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--d-pli) var(--sortie);
+}
+.move.is-open .move-corps { grid-template-rows: 1fr; }
+.move-corps > .move-corps-int { overflow: hidden; }
+.move-corps-int { padding-bottom: var(--e2); }
+
+/* ==========================================================================
+   PIPELINE : « tes go en cours » — l'organisme au travail.
+   .go-vif : famille d'accent n°2 (sur 2) — l'étape vivante.
+   ========================================================================== */
+.pipeline { position: relative; margin-top: var(--e6); }
+.pipeline::before {
+  content: "";
+  position: absolute;
+  left: calc(5px - var(--e5)); top: 6px; /* centré sur le nerf */
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--abysse-0);
+  border: 2px solid var(--texte-3);
+  transform: translateX(-50%);
+}
+
+.go-entree {
+  margin-top: var(--e3);
+  background: var(--abysse-1);
+  border: 1px solid var(--membrane); /* décoratif */
+  padding: var(--e4);
+}
+.go-entree + .go-entree { margin-top: var(--e3); }
+
+.go-entree-tete {
+  display: flex; justify-content: space-between; align-items: baseline;
+  gap: var(--e3); flex-wrap: wrap;
+}
+.go-entree-tete .quoi { color: var(--texte-1); /* 16.78:1 vs abysse-1 */ font-weight: 700; font-size: var(--fs-corps); }
+
+.etapes-pipe { list-style: none; margin-top: var(--e3); }
+.etape-pipe {
+  display: flex; align-items: baseline; gap: var(--e3);
+  padding: var(--e2) 0;
+  font-size: var(--fs-sub);
+  color: var(--texte-2); /* 9.99:1 vs abysse-1 */
+}
+.etape-pipe .agent { flex: none; width: 64px; }
+.etape-pipe.is-wait { color: var(--texte-3); /* 5.97:1 vs abysse-1 */ }
+
+/* L'étape vivante : seul autre endroit où l'esca s'allume. */
+.go-vif { color: var(--go); /* 11.67:1 vs abysse-1 */ }
+.go-vif .pouls {
+  display: inline-block;
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--go);
+  margin-right: 6px;
+  animation: battement 4s infinite;
+}
+
+.pipeline-hint { margin-top: var(--e3); font-size: var(--fs-sub); color: var(--texte-3); /* 6.35:1 vs abysse-0 */ }
+
+/* ==========================================================================
+   SKILL UP + PIED
+   ========================================================================== */
+.skill { position: relative; margin-top: var(--e6); }
+.skill::before {
+  content: "";
+  position: absolute;
+  left: calc(5px - var(--e5)); top: 6px; /* centré sur le nerf */
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--abysse-0);
+  border: 2px solid var(--texte-3);
+  transform: translateX(-50%);
+}
+.skill p { margin-top: var(--e2); color: var(--texte-2); }
+
+.pied {
+  margin-top: var(--e6);
+  padding-top: var(--e4);
+  border-top: 1px solid var(--membrane); /* décoratif */
+}
+.pied .tele { display: block; }
+.pied .tele + .tele { margin-top: var(--e2); }
+
+/* ==========================================================================
+   ARRIVÉE : la transmission émerge de l'abysse. 400ms, une fois.
+   ========================================================================== */
+.arrivee { animation: emersion var(--d-arrivee) var(--sortie) both; }
+.arrivee--2 { animation-delay: 80ms; }
+.arrivee--3 { animation-delay: 160ms; }
+@keyframes emersion {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
+   REDUCED MOTION : tout est coupé, les états restent lisibles.
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .coeur, .go-vif .pouls { opacity: 1; }
+  .arrivee { opacity: 1; transform: none; }
+}
+</style>
+</head>
+<body>
+<div class="cadre">
+
+  <!-- ======================= EN-TÊTE : SIGNES VITAUX ======================= -->
+  <header class="tete arrivee">
+    <div class="tete-rang1">
+      <span class="marque">The Wire</span>
+      <span class="ecg" aria-hidden="true">
+        <!-- ECG dessiné main : battements irréguliers, micro-imperfection assumée -->
+        <svg viewBox="0 0 150 18" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0 11 H22 L26 11 L29 4 L32 15 L35 11 H58 L61 9.5 L64 11 H98 L101 2 L104 16 L107 11 H128 L131 12.5 L134 11 H150"
+                fill="none" stroke="currentColor" stroke-width="1.25"/>
+        </svg>
+      </span>
+    </div>
+    <div class="vitals tele">
+      <span class="coeur" aria-hidden="true"></span>
+      <span>Vivant</span>
+      <span>Mar. 30 juin · 10:00:07</span>
+      <span>Signaux 135 · Coupe 9</span>
+      <span class="chip-demo">Simulation</span>
+    </div>
+  </header>
+
+  <!-- ======================= HOOK ======================= -->
+  <section class="transmission arrivee arrivee--2" aria-label="Transmission du jour">
+    <span class="tele">Transmission — 10:00</span>
+    <h1 class="hook">Deux de tes apps se font copier cette semaine, mais personne ne les vend encore. À toi de jouer le premier.</h1>
+  </section>
+
+  <!-- ======================= LA COLONNE ======================= -->
+  <main class="corps-radar arrivee arrivee--3">
+    <div class="nerf" id="nerf" aria-hidden="true"></div>
+
+    <!-- =========== MOVE 01 · STAR · DÉPLIÉ =========== -->
+    <article class="move move--star is-open" data-ramp="blue" aria-label="Move 1, star, BrandPulse">
+      <div class="move-id tele">
+        <span class="rang">Move 01 ★</span>
+        <span class="projet">BrandPulse</span>
+        <span>~2h · gros gain · cash tout de suite</span>
+      </div>
+
+      <div class="organe">
+        <!-- LE VERDICT — title: « Gagne ~290€ : ... » -->
+        <div class="verdict">
+          <span class="tele dendrite">Gagne</span>
+          <div class="verdict-gain"><span class="approx">~</span>290€</div>
+          <p class="mission">Ton app BrandPulse peut déjà vendre ce rapport, il manque juste un prix.</p>
+        </div>
+
+        <!-- DO NOW : le geste -->
+        <div class="bloc">
+          <span class="tele dendrite">Fais ça maintenant</span>
+          <p>Ajoute cette ligne sous le titre de <strong>brandpulse-app.onrender.com</strong> (fichier index.html) : «&nbsp;Rapport complet + plan de correction : 290€, livré en 48h.&nbsp;»</p>
+        </div>
+
+        <!-- LE LEURRE : go 1 -->
+        <button class="go-cta" id="go-1" type="button" data-go="1" data-projet="BrandPulse">
+          <span>Go 1 — ouvre le pipeline</span>
+          <span class="fleche" aria-hidden="true">-&gt;&gt;</span>
+        </button>
+        <p class="go-note" id="go-note-1">Comme répondre «&nbsp;go 1&nbsp;» sur Telegram. Fable taille le plan, Sonnet exécute.</p>
+
+        <!-- INSIGHT : le moment théâtral -->
+        <div class="bloc insight">
+          <span class="tele">Insight — ce que l'agent voit</span>
+          <p>Pari : le premier qui affiche un prix rafle les demandes — une page de vente suffit pour tester si ça paie, sans coder.</p>
+        </div>
+
+        <!-- POURQUOI MAINTENANT -->
+        <div class="bloc">
+          <span class="tele dendrite">Pourquoi maintenant</span>
+          <p>3 repos ont copié l'idée cette semaine, mais aucun ne facture le rapport. La demande existe, l'offre payante non.</p>
+        </div>
+
+        <!-- STEPS : tier 2 -->
+        <div class="bloc">
+          <span class="tele dendrite">Le plan — 3 étapes</span>
+          <ol class="steps">
+            <li class="step">
+              <p class="step-t">Mets un prix sur la page</p>
+              <p class="step-how">Ajoute une ligne sous le titre dans index.html :</p>
+              <div class="paste">
+                <pre>Score gratuit en 60s. Rapport complet + plan de correction : 290€, livré en 48h.</pre>
+                <button class="copier" type="button">Copier le texte</button>
+              </div>
+              <p class="step-done"><span class="tele">Fait quand</span>le prix est en ligne sur brandpulse-app.onrender.com</p>
+            </li>
+            <li class="step">
+              <p class="step-t">Ajoute la liste des corrections au rapport (ce qui justifie les 290€)</p>
+              <p class="step-how">Colle dans Claude Code :</p>
+              <div class="paste">
+                <pre>Dans generate_report.py, ajoute une section « Top 3 corrections pour être cité par l'IA » : pour chaque requête manquante, le manque + une action concrète. Garde mon style actuel.</pre>
+                <button class="copier" type="button">Copier le texte</button>
+              </div>
+              <p class="step-done"><span class="tele">Fait quand</span>report.html affiche 3 corrections sous le score</p>
+            </li>
+            <li class="step">
+              <p class="step-t">Cherche 1 premier acheteur (sans code)</p>
+              <p class="step-how">Lance BrandPulse sur 3 marques B2B FR, envoie ce DM à chaque fondateur (remplace [X]) :</p>
+              <div class="paste">
+                <pre>J'ai checké la visibilité de [X] dans ChatGPT face à vos concurrents — voici le rapport. Le plan de correction, je le fais pour 290€. Ça vous intéresse ?</pre>
+                <button class="copier" type="button">Copier le texte</button>
+              </div>
+              <p class="step-done"><span class="tele">Fait quand</span>3 DMs envoyés · 1 réponse = c'est validé</p>
+            </li>
+          </ol>
+        </div>
+
+        <!-- ENSUITE + AUSSI POUR -->
+        <div class="bloc">
+          <span class="tele dendrite">Ensuite</span>
+          <p>Si 1 client paie une fois → propose-lui le suivi à 79€/mois (l'argent qui revient tout seul, c'est le vrai jackpot).</p>
+        </div>
+        <div class="bloc">
+          <span class="tele dendrite">Aussi pour</span>
+          <p>Le même coup — mesurer puis vendre la correction — sert aussi Claude Eats Tokens.</p>
+        </div>
+      </div>
+    </article>
+
+    <!-- =========== MOVE 02 · REPLIÉ =========== -->
+    <article class="move" data-ramp="teal" aria-label="Move 2, Claude Eats Tokens">
+      <button class="move-pli" type="button" aria-expanded="false" aria-controls="corps-m2">
+        <span class="move-id tele">
+          <span class="rang">Move 02</span>
+          <span class="projet">Claude Eats Tokens</span>
+          <span>quelques jours · bon gain</span>
+        </span>
+        <span class="titre">3 apps copient la tienne cette semaine — sors la seule qui prévient AVANT de bloquer<span class="pli" aria-hidden="true">+</span></span>
+      </button>
+      <div class="move-corps" id="corps-m2">
+        <div class="move-corps-int">
+          <div class="bloc">
+            <span class="tele dendrite">Pourquoi maintenant</span>
+            <p>Les 3 copies comptent ce qui est déjà dépensé. Aucune ne prévient quand tu vas atteindre la limite. C'est ce qui manque à tout le monde.</p>
+          </div>
+          <div class="bloc">
+            <span class="tele dendrite">Fais ça maintenant</span>
+            <p>Mets cette phrase en titre de ta PWA : «&nbsp;Sache si tu peux continuer — avant de toucher la limite.&nbsp;»</p>
+          </div>
+          <button class="go-cta" type="button" data-go="2" data-projet="Claude Eats Tokens">
+            <span>Go 2 — ouvre le pipeline</span>
+            <span class="fleche" aria-hidden="true">-&gt;&gt;</span>
+          </button>
+          <div class="bloc">
+            <span class="tele dendrite">Le plan — 2 étapes</span>
+            <ol class="steps">
+              <li class="step">
+                <p class="step-t">Comprends comment le leader compte</p>
+                <p class="step-how">Ouvre le README de cctally, note sa formule de coût en 1 phrase.</p>
+                <p class="step-done"><span class="tele">Fait quand</span>tu sais dire en 1 phrase comment cctally calcule, et où il se trompe</p>
+              </li>
+              <li class="step">
+                <p class="step-t">Écris ta promesse sur la page</p>
+                <p class="step-how">Ajoute en titre de la PWA :</p>
+                <div class="paste">
+                  <pre>Sache si tu peux continuer — avant de toucher la limite. On prévoit ta fenêtre de 5h, pas juste le passé.</pre>
+                  <button class="copier" type="button">Copier le texte</button>
+                </div>
+                <p class="step-done"><span class="tele">Fait quand</span>la promesse est le gros titre de ta PWA</p>
+              </li>
+            </ol>
+          </div>
+          <div class="bloc">
+            <span class="tele dendrite">Ensuite</span>
+            <p>Une fois la promesse posée, un post LinkedIn te positionne comme «&nbsp;le mec qui mesure le coût de l'IA&nbsp;» — utile pour vendre des audits.</p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- =========== MOVE 03 · REPLIÉ =========== -->
+    <article class="move" data-ramp="coral" aria-label="Move 3, Pacto Club">
+      <button class="move-pli" type="button" aria-expanded="false" aria-controls="corps-m3">
+        <span class="move-id tele">
+          <span class="rang">Move 03</span>
+          <span class="projet">Pacto Club</span>
+          <span>20 min · sans code</span>
+        </span>
+        <span class="titre">Quelqu'un cherche à louer du matériel DJ sur Reddit — contacte-le, c'est exactement ton client<span class="pli" aria-hidden="true">+</span></span>
+      </button>
+      <div class="move-corps" id="corps-m3">
+        <div class="move-corps-int">
+          <div class="bloc">
+            <span class="tele dendrite">Pourquoi maintenant</span>
+            <p>Un post Reddit d'hier : une personne cherche à louer du matériel DJ et ne trouve personne. C'est pile le besoin que Pacto résout.</p>
+          </div>
+          <div class="bloc">
+            <span class="tele dendrite">Fais ça maintenant</span>
+            <p>Réponds au post avec un message simple : «&nbsp;Je monte un service pour ça à Paris, je peux t'aider — c'est quoi ton besoin exact ?&nbsp;»</p>
+          </div>
+          <button class="go-cta" type="button" data-go="3" data-projet="Pacto Club">
+            <span>Go 3 — ouvre le pipeline</span>
+            <span class="fleche" aria-hidden="true">-&gt;&gt;</span>
+          </button>
+          <div class="bloc">
+            <span class="tele dendrite">Le plan — 2 étapes</span>
+            <ol class="steps">
+              <li class="step">
+                <p class="step-t">Lis le post en entier</p>
+                <p class="step-how">Ouvre le lien Reddit, repère la ville et le matériel cherché.</p>
+                <p class="step-done"><span class="tele">Fait quand</span>tu sais quoi il cherche et où</p>
+              </li>
+              <li class="step">
+                <p class="step-t">Contacte la personne</p>
+                <p class="step-how">Réponds ou envoie un message privé :</p>
+                <div class="paste">
+                  <pre>Salut ! Je monte justement un service de prêt de matériel DJ entre passionnés à Paris. C'est quoi ton besoin exact ? Je peux peut-être t'aider tout de suite.</pre>
+                  <button class="copier" type="button">Copier le texte</button>
+                </div>
+                <p class="step-done"><span class="tele">Fait quand</span>1 message envoyé</p>
+              </li>
+            </ol>
+          </div>
+          <div class="bloc">
+            <span class="tele dendrite">Ensuite</span>
+            <p>Si la personne répond, tu as ton premier vrai cas d'usage Pacto — note tout ce qu'elle dit, c'est de l'or pour ton produit.</p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- =========== PIPELINE : TES GO EN COURS =========== -->
+    <section class="pipeline" aria-label="Tes go en cours">
+      <span class="tele dendrite">Tes go en cours</span>
+      <div id="liste-go" aria-live="polite">
+        <div class="go-entree">
+          <div class="go-entree-tete">
+            <span class="quoi">Go · Claude Eats Tokens</span>
+            <span class="tele">Lancé hier · 18:51</span>
+          </div>
+          <ul class="etapes-pipe">
+            <li class="etape-pipe"><span class="agent tele">Fable</span><span>plan taillé — 2 étapes · fait</span></li>
+            <li class="etape-pipe go-vif"><span class="agent tele">Sonnet</span><span><span class="pouls" aria-hidden="true"></span>exécute 2/2 : «&nbsp;promesse en titre de la PWA&nbsp;»</span></li>
+            <li class="etape-pipe is-wait"><span class="agent tele">Preuve</span><span>en attente — un commit sur la PWA clôt le go</span></li>
+          </ul>
+        </div>
+      </div>
+      <p class="pipeline-hint">Un go = un ordre. Fable taille le plan, Sonnet exécute, la preuve (commit, message, euro) clôt la boucle.</p>
+    </section>
+
+    <!-- =========== SKILL UP =========== -->
+    <section class="skill" aria-label="Skill up">
+      <span class="tele dendrite">Skill up — 1h pour monter</span>
+      <p>Comprendre le GEO (faire en sorte que les IA comme ChatGPT recommandent une marque) en 1h. Ça rend ton pitch BrandPulse plus fort ET ça fait bien sur ton CV.</p>
+    </section>
+  </main>
+
+  <!-- =========== PIED : TÉLÉMÉTRIE DE COUPE =========== -->
+  <footer class="pied">
+    <span class="tele">135 signaux frais · 9 coupés · mode simulation</span>
+    <span class="tele">L'organisme veille · prochaine transmission demain 10:00</span>
+  </footer>
+
+  <p class="visually-hidden" role="status" aria-live="polite" id="annonce"></p>
+</div>
+
+<script>
+/* ==========================================================================
+   Comportements — vanilla, zéro dépendance, zéro requête.
+   1. Dépliage des moves 2/3 (240ms — état : ouvrir le tier 2)
+   2. Copie des blocs paste (180ms — état : copié) avec repli execCommand
+      pour les contextes sans Clipboard API (file://)
+   3. Go N : morph du leurre (320ms) + impulsion le long du nerf (480ms)
+      + entrée pipeline ajoutée en tête de « Tes go en cours »
+   ========================================================================== */
+(function () {
+  "use strict";
+  var annonce = document.getElementById("annonce");
+  var nerf = document.getElementById("nerf");
+
+  /* --- 1. Dépliage --- */
+  document.querySelectorAll(".move-pli").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var move = btn.closest(".move");
+      var ouvert = move.classList.toggle("is-open");
+      btn.setAttribute("aria-expanded", ouvert ? "true" : "false");
+    });
+  });
+
+  /* --- 2. Copie --- */
+  function copierRepli(txt) {
+    var ta = document.createElement("textarea");
+    ta.value = txt;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch (e) { /* démo */ }
+    ta.remove();
+  }
+  function copierTexte(txt) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      /* Si l'API rejette (permissions, file://), on retombe sur le repli :
+         le feedback visuel part dans tous les cas. */
+      return navigator.clipboard.writeText(txt).catch(function () { copierRepli(txt); });
+    }
+    copierRepli(txt);
+    return Promise.resolve();
+  }
+
+  document.querySelectorAll(".copier").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var pre = btn.parentElement.querySelector("pre");
+      copierTexte(pre.textContent).then(function () {
+        btn.classList.add("is-done");
+        btn.textContent = "Copié — colle-le";
+        annonce.textContent = "Texte copié dans le presse-papiers.";
+        setTimeout(function () {
+          btn.classList.remove("is-done");
+          btn.textContent = "Copier le texte";
+        }, 1600);
+      });
+    });
+  });
+
+  /* --- 3. Go N : l'ordre part, le pipeline s'ouvre --- */
+  document.querySelectorAll(".go-cta").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      if (btn.classList.contains("is-sent")) { return; }
+      var n = btn.getAttribute("data-go");
+      var projet = btn.getAttribute("data-projet");
+
+      btn.classList.add("is-sent");
+      btn.setAttribute("aria-disabled", "true");
+      btn.querySelector("span").textContent = "Go " + n + " transmis — Fable taille le plan";
+      btn.querySelector(".fleche").textContent = "OK";
+
+      /* Impulsion le long du nerf : 480ms, une fois. */
+      nerf.classList.remove("is-impulse");
+      void nerf.offsetWidth; /* redémarre l'animation */
+      nerf.classList.add("is-impulse");
+
+      /* Nouvelle entrée pipeline. */
+      var entree = document.createElement("div");
+      entree.className = "go-entree";
+      entree.innerHTML =
+        '<div class="go-entree-tete">' +
+          '<span class="quoi">Go ' + n + " · " + projet + "</span>" +
+          '<span class="tele">À l’instant</span>' +
+        "</div>" +
+        '<ul class="etapes-pipe">' +
+          '<li class="etape-pipe go-vif"><span class="agent tele">Fable</span>' +
+            '<span><span class="pouls" aria-hidden="true"></span>taille le plan…</span></li>' +
+          '<li class="etape-pipe is-wait"><span class="agent tele">Sonnet</span><span>en attente du plan</span></li>' +
+          '<li class="etape-pipe is-wait"><span class="agent tele">Preuve</span><span>en attente</span></li>' +
+        "</ul>";
+      var liste = document.getElementById("liste-go");
+      liste.insertBefore(entree, liste.firstChild);
+
+      annonce.textContent = "Go " + n + " transmis. Le pipeline est ouvert : Fable taille le plan.";
+    });
+  });
+})();
+</script>
+</body>
+</html>

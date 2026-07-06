@@ -3,7 +3,7 @@
    radar est donc toujours frais ; hors-ligne UNIQUEMENT, on ressert la dernière
    version en cache (mieux qu'un écran cassé — la date affichée dit son âge).
    Purge tout cache != version courante à l'activation. Calqué sur Claude Eats Tokens. */
-const CACHE = "veille-v2"; // v2 : refonte The Wire (design-system.css, logo, démo précachée)
+const CACHE = "veille-v3"; // v3 : DA « LE CALIBRE » (dark-only, verdict tabulaire, pipeline go local)
 const ASSETS = [
   "./", "./index.html",
   "./pwa/app.js", "./pwa/config.js", "./pwa/design-system.css",

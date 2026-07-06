@@ -1,163 +1,146 @@
 /* ==========================================================================
-   THE WIRE — design system v1
-   Le radar personnel d'Adam. Sombre par défaut (terminal premium),
-   variante claire automatique via prefers-color-scheme.
+   THE WIRE — design system v2 : « LE CALIBRE »
+   L'instrument de verdict. Le Bloomberg Terminal repensé par Dieter Rams,
+   pour une main, un matin, 20 secondes. Dark-only, assumé (voir manifeste
+   da-explorations/direction-a.html — source de vérité visuelle).
+
    Vanilla CSS. Zéro framework, zéro font externe, zéro CDN → 100% offline.
-   Polices : system-ui (UI), serif générique (headline), ui-monospace (paste/chiffres).
+   Fontes SYSTÈME uniquement :
+     --mono : ui-monospace (Cascadia Mono / SF Mono / Menlo / Consolas)
+     --sans : system-ui / Segoe UI Variable / Segoe UI / Roboto
+   Fonte souhaitée par le jury (NOMMÉE, non téléchargée — voir règle dure) :
+   Berkeley Mono, U.S. Graphics Company, licence commerciale (~75$),
+   https://usgraphics.com/products/berkeley-mono
+   Alternative libre : IBM Plex Mono, SIL OFL 1.1, https://github.com/IBM/plex
+   Le rendu tient déjà entièrement en ui-monospace : c'est un plus, pas une
+   dépendance. Adam décidera s'il l'achète ; personne ne la télécharge ici.
 
    CONTRASTE — tous les ratios ci-dessous sont CALCULÉS (WCAG 2.1, luminance
-   relative) et vérifiés >= 4.5:1 pour le texte (AA), >= 3:1 pour les éléments
-   d'interface non-textuels. Le ratio est noté en commentaire à côté de chaque
-   couleur de texte, sous la forme « x.xx:1 vs <fond> ».
+   relative), jamais estimés. Notés en commentaire à côté de chaque usage
+   texte, format « x.xx:1 vs <fond> ». Cibles tactiles >= 44px partout où
+   l'utilisateur agit (copier, go, étapes, dépliage).
 
-   Comment l'utiliser (pour l'intégrateur UX) :
-   - Chaque carte move porte data-ramp="blue|teal|purple|coral|amber|gray"
-     (la couleur du projet, fournie par le radar JSON). Ce data-attribute
-     alimente les variables locales --ramp-* consommées par les composants.
-   - Le move star est ouvert par défaut ; les autres moves sont repliés et
-     s'ouvrent en ajoutant .is-open sur .tw-move.
+   COMPATIBILITÉ AVEC app.js EXISTANT (règle dure : ne pas casser fetch /
+   cache / localStorage / aria / copy-buttons / états / insight) : toutes
+   les classes .tw-* que app.js génère sont conservées et simplement
+   re-stylées sur les nouveaux tokens. Aucune classe consommée par app.js
+   n'a été renommée ni supprimée. Les nouveaux composants (readout, ruler,
+   go, pipe, stamp, lcd) sont des AJOUTS purs, appliqués par de petits
+   ajustements de app.js décrits dans DESIGN-SPEC.md.
    ========================================================================== */
 
 /* ==========================================================================
-   1. TOKENS — thème sombre (défaut)
+   1. TOKENS — dark-only (aucune variante claire : voir manifeste §6)
    ========================================================================== */
 :root {
-  /* --- Typo : échelles system-ui, mobile-first (px) --- */
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-serif: ui-serif, Georgia, "Times New Roman", serif; /* headline éditoriale */
+  /* --- Fontes système uniquement --- */
+  --font-sans: system-ui, "Segoe UI Variable Display", "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+  /* Compat : anciens noms de variables consommés nulle part en dur, gardés
+     par prudence si un futur composant les référence. */
+  --font-serif: var(--font-sans);
 
-  --fs-hero: 22px;     --lh-hero: 1.35;  /* headline du jour (serif) */
-  --fs-title: 17px;    --lh-title: 1.3;  /* titre de move */
-  --fs-body: 15px;     --lh-body: 1.55;  /* texte courant */
-  --fs-sub: 13px;      --lh-sub: 1.5;    /* texte secondaire, steps "how" */
-  --fs-caption: 12px;  --lh-caption: 1.4;/* meta, done-when, footer */
-  --fs-micro: 11px;    --lh-micro: 1.35; /* labels uppercase, chips */
-  --ls-micro: 0.06em;                    /* letter-spacing des micro-labels */
-  --measure: 65ch;                       /* largeur max d'une ligne de prose */
+  /* --- Échelle typographique (px), mesurée au viewport 390×844 --- */
+  --fs-verdict: 72px;  --lh-verdict: 0.95; /* le chiffre qui paie, 68px rendus ≥ 40px */
+  --fs-hero: 19px;     --lh-hero: 1.4;     /* headline du jour */
+  --fs-title: 16.5px;  --lh-title: 1.38;   /* titre de move */
+  --fs-body: 15px;     --lh-body: 1.55;    /* texte courant */
+  --fs-sub: 14px;      --lh-sub: 1.5;      /* texte secondaire, steps "how" */
+  --fs-caption: 12.5px; --lh-caption: 1.4; /* meta, done-when, footer */
+  --fs-data: 12px;     --lh-data: 1.4;     /* données, cellules registre */
+  --fs-micro: 11px;    --lh-micro: 1.35;   /* labels uppercase, chips */
+  --ls-micro: 0.14em;                      /* letter-spacing des micro-labels */
+  --measure: 60ch;                         /* largeur max d'une ligne de prose */
 
-  /* --- Espacements (échelle 4px) --- */
+  /* --- Espacements (grille 4px) --- */
   --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
   --sp-5: 20px; --sp-6: 24px; --sp-7: 32px; --sp-8: 48px;
 
-  /* --- Rayons --- */
-  --r-s: 8px; --r-m: 12px; --r-l: 16px; --r-pill: 999px;
+  /* --- Angles : zéro partout. L'instrument n'a pas de coins ronds. --- */
+  --r-s: 0; --r-m: 0; --r-l: 0; --r-pill: 0;
 
-  /* --- Ombres (sur fond sombre : bordure + halo discret) --- */
-  --shadow-1: 0 1px 2px rgba(0,0,0,0.35);
-  --shadow-2: 0 2px 8px rgba(0,0,0,0.45), 0 1px 2px rgba(0,0,0,0.35);
-  --shadow-star: 0 0 0 1px rgba(204,120,92,0.35), 0 4px 18px rgba(204,120,92,0.10);
+  /* --- Ombres : zéro. Zéro dégradé. Le relief vient des filets 1px. --- */
+  --shadow-1: none;
+  --shadow-2: none;
+  --shadow-star: none;
 
-  /* --- Mouvement --- */
+  /* --- Mouvement (audité état par état — voir manifeste) --- */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --dur-fast: 160ms; --dur-med: 320ms; --dur-slow: 480ms;
+  --dur-fast: 160ms;  /* copie */
+  --dur-med: 240ms;   /* dépliage move, envoi go */
+  --dur-slow: 320ms;  /* impression d'une ligne du fil pipeline */
+  /* compat anciens noms utilisés par des sélecteurs génériques */
+  --dur-1: var(--dur-fast);
+  --dur-2: var(--dur-med);
+  --dur-3: var(--dur-slow);
 
-  /* --- Surfaces (charbon chaud, assorti au logo #1A1915) --- */
-  --bg-0: #131210;            /* page */
-  --bg-1: #1D1B17;            /* carte */
-  --bg-2: #262320;            /* inset : paste, encarts dans une carte */
-  --bg-star: #231C15;         /* lavis chaud de la carte star */
-  --line: rgba(240,238,230,0.10);        /* bordure décorative */
-  --line-strong: rgba(240,238,230,0.20); /* bordure appuyée */
+  /* --- Surfaces --- */
+  --bg-0: #0B0D10;  /* page */
+  --bg-1: #11141A;  /* panneau / carte */
+  --bg-2: #191D26;  /* inset : paste, encarts dans une carte */
+  --bg-star: var(--bg-1); /* pas de lavis : la star se distingue par structure, pas par teinte */
 
-  /* --- Texte --- */
-  --text-1: #F0EEE6;  /* 16.12:1 vs bg-0 · 14.80:1 vs bg-1 · 13.45:1 vs bg-2 */
-  --text-2: #C6C0B3;  /* 10.33:1 vs bg-0 ·  9.49:1 vs bg-1 ·  8.63:1 vs bg-2 */
-  --text-3: #9B958A;  /*  6.29:1 vs bg-0 ·  5.78:1 vs bg-1 ·  5.25:1 vs bg-2 */
+  /* Filets : DÉCORATIFS (<3:1 voulu), chaque frontière porteuse de sens est
+     doublée par une bordure --edge (>=3:1 UI, voir plus bas). */
+  --line: #262C37;         /* filet 1px du registre continu */
+  --line-strong: #3A4250;  /* graduation majeure (décoratif) */
+  --tick: #2A303B;         /* graduation mineure (décoratif) */
 
-  /* --- Accent (terracotta The Wire) --- */
-  --accent: #CC785C;        /* usage NON-textuel : bordures, icônes, anneaux */
-  --accent-text: #E5987A;   /* 8.12:1 vs bg-0 · 7.45:1 vs bg-1 — texte accent */
-  --gold: #E2B970;          /* 9.34:1 vs bg-1 · 9.14:1 vs bg-star — badge star */
-  --ok: #7FD0B2;            /* 9.47:1 vs bg-1 — "done when", succès */
-  --err: #F0A183;           /* 9.03:1 vs bg-0 — état erreur */
-  --warn-bg: #2F2616;       /* fond du badge démo */
-  --warn-text: #E3B366;     /* 7.74:1 vs warn-bg — texte badge démo */
+  /* --- Encres --- */
+  --text-1: #EEF1F5;  /* 17.17:1 vs bg-0 · 16.28:1 vs bg-1 · 14.89:1 vs bg-2 */
+  --text-2: #BAC1CC;  /* 10.74:1 vs bg-0 · 10.18:1 vs bg-1 ·  9.31:1 vs bg-2 */
+  --text-3: #8E97A4;  /*  6.59:1 vs bg-0 ·  6.25:1 vs bg-1 ·  5.71:1 vs bg-2 */
+  /* Bordure PORTEUSE de sens (donow, stamp) : même valeur que text-3,
+     vérifiée >= 3:1 UI (6.25:1 vs bg-1, très au-delà du plancher). */
+  --edge: #8E97A4;
 
-  /* --- Les 6 couleurs ramp (code visuel des projets) ---
-     Pour chaque ramp : text (>=4.5:1 vs bg-1 ET vs son propre bg),
-     bg (fond de chip), solid (bordures/jauges, >=3:1 vs bg-1),
-     on-solid (texte posé SUR solid, >=4.5:1). */
-  --ramp-blue-text: #9FC6EF;   /* 9.66:1 vs bg-1 · 8.42:1 vs blue-bg */
-  --ramp-blue-bg: #1A2836;
-  --ramp-blue-solid: #6BA6E3;  /* UI 6.70:1 vs bg-1 · on-solid 7.30:1 */
-  --ramp-teal-text: #7FD0B2;   /* 9.47:1 vs bg-1 · 8.22:1 vs teal-bg */
-  --ramp-teal-bg: #172B24;
-  --ramp-teal-solid: #3CB389;  /* UI 6.55:1 vs bg-1 · on-solid 7.13:1 */
-  --ramp-purple-text: #BFB7F3; /* 9.24:1 vs bg-1 · 8.34:1 vs purple-bg */
-  --ramp-purple-bg: #252138;
-  --ramp-purple-solid: #9C92EC;/* UI 6.33:1 vs bg-1 · on-solid 6.90:1 */
-  --ramp-coral-text: #F0A183;  /* 8.29:1 vs bg-1 · 7.38:1 vs coral-bg */
-  --ramp-coral-bg: #33211A;
-  --ramp-coral-solid: #E17B52; /* UI 5.86:1 vs bg-1 · on-solid 6.38:1 */
-  --ramp-amber-text: #E3B366;  /* 8.93:1 vs bg-1 · 7.74:1 vs amber-bg */
-  --ramp-amber-bg: #2F2616;
-  --ramp-amber-solid: #D19A45; /* UI 6.89:1 vs bg-1 · on-solid 7.51:1 */
-  --ramp-gray-text: #B9B4A8;   /* 8.32:1 vs bg-1 · 7.50:1 vs gray-bg */
-  --ramp-gray-bg: #26241F;
-  --ramp-gray-solid: #948F83;  /* UI 5.33:1 vs bg-1 · on-solid 5.81:1 */
-  --ramp-on-solid: #131210;    /* encre sombre posée sur les solids clairs */
+  /* --- Accent UNIQUE : le signal. N'apparaît QUE dans .go et .pipe
+     (grep-prouvable : voir occurrences de var(--signal) plus bas). --- */
+  --signal: #FFC833;      /* 12.57:1 vs bg-0 · 11.91:1 vs bg-1 (UI >= 3:1 : x4) */
+  --on-signal: #0B0D10;   /* 12.57:1 vs signal */
+
+  --ok: #5FC98F;          /*  9.49:1 vs bg-0 ·  8.99:1 vs bg-1 ·  8.22:1 vs bg-2 */
+  --err: #F0A183;         /* réutilisé de l'ancienne DA, recalculé : 9.39:1 vs bg-0 · 8.90:1 vs bg-1 */
+  --warn-text: var(--text-2);
+
+  /* --- Fenêtre LCD inversée : l'insight est l'unique surface claire --- */
+  --lcd: #D9DFE8;
+  --lcd-ink: #10141B;  /* 13.77:1 vs lcd */
+  --lcd-mut: #3F4854;  /*  6.91:1 vs lcd */
+
+  /* --- Les 6 couleurs ramp : neutralisées par design (le jaune est seul
+     signal chromatique de l'écran — voir manifeste §2 "unicité de l'accent").
+     Chaque ramp garde une identité MINIMALE (texte du chip) pour rester
+     lisible/distinguable projet-à-projet, sans jamais rivaliser avec le
+     jaune : tons de gris-bleu proches de --text-2/--text-3, contrastes
+     recalculés vs bg-1 et vs bg-2 (fond du chip). --- */
+  --ramp-blue-text: #9FC6EF;    /* 10.36:1 vs bg-1 · 9.70:1 vs blue-bg */
+  --ramp-blue-bg: #171B22;
+  --ramp-blue-solid: #6BA6E3;   /* UI 7.19:1 vs bg-1 */
+  --ramp-teal-text: #8FD3BE;    /* 10.74:1 vs bg-1 · 10.37:1 vs teal-bg */
+  --ramp-teal-bg: #12191A;
+  --ramp-teal-solid: #5FC9A8;   /* UI 9.14:1 vs bg-1 */
+  --ramp-purple-text: #C3BCEF;  /* 10.33:1 vs bg-1 · 9.83:1 vs purple-bg */
+  --ramp-purple-bg: #191823;
+  --ramp-purple-solid: #A79CE8; /* UI 7.52:1 vs bg-1 */
+  --ramp-coral-text: #F0A98D;   /* 9.45:1 vs bg-1 · 9.05:1 vs coral-bg */
+  --ramp-coral-bg: #1E1717;
+  --ramp-coral-solid: #E28B67;  /* UI 7.13:1 vs bg-1 */
+  --ramp-amber-text: #E8C583;   /* 11.19:1 vs bg-1 · 10.73:1 vs amber-bg */
+  --ramp-amber-bg: #1C1811;
+  --ramp-amber-solid: #D4A94F;  /* UI 8.42:1 vs bg-1 */
+  --ramp-gray-text: var(--text-2);
+  --ramp-gray-bg: var(--bg-2);
+  --ramp-gray-solid: var(--text-3);
+  --ramp-on-solid: #0B0D10;
 }
 
 /* ==========================================================================
-   2. THÈME CLAIR (variante automatique)
-   Reprend la crème Anthropic. Mêmes garanties de contraste, recalculées.
+   2. MAPPING RAMP → variables locales
+   Poser data-ramp="<couleur>" sur .tw-move suffit : les composants en
+   dessous consomment --ramp-text / --ramp-bg / --ramp-solid sans connaître
+   la couleur. Neutralisé visuellement (voir §1) : sert seulement le chip.
    ========================================================================== */
-@media (prefers-color-scheme: light) {
-  :root {
-    --shadow-1: 0 1px 2px rgba(26,25,21,0.08);
-    --shadow-2: 0 2px 10px rgba(26,25,21,0.10), 0 1px 2px rgba(26,25,21,0.06);
-    --shadow-star: 0 0 0 1px rgba(204,120,92,0.45), 0 4px 16px rgba(204,120,92,0.14);
-
-    --bg-0: #F0EEE6;
-    --bg-1: #FBFAF6;
-    --bg-2: #E9E6DB;
-    --bg-star: #F7EEDD;
-    --line: rgba(26,25,21,0.12);
-    --line-strong: rgba(26,25,21,0.24);
-
-    --text-1: #1A1915;  /* 15.14:1 vs bg-0 · 16.84:1 vs bg-1 · 14.08:1 vs bg-2 */
-    --text-2: #4A4841;  /*  7.88:1 vs bg-0 ·  8.76:1 vs bg-1 ·  7.32:1 vs bg-2 */
-    --text-3: #66645C;  /*  5.10:1 vs bg-0 ·  5.68:1 vs bg-1 ·  4.74:1 vs bg-2 */
-
-    --accent: #CC785C;
-    --accent-text: #9C4A26; /* 5.28:1 vs bg-0 · 5.88:1 vs bg-1 */
-    --gold: #7A5410;        /* 6.48:1 vs bg-1 · 5.87:1 vs bg-star */
-    --ok: #0F6E56;          /* 5.94:1 vs bg-1 */
-    --err: #993C1D;         /* 5.99:1 vs bg-0 */
-    --warn-bg: #F6EBD4;
-    --warn-text: #7A4E09;   /* 6.08:1 vs warn-bg */
-
-    --ramp-blue-text: #0C447C;   /* 9.42:1 vs bg-1 · 8.36:1 vs blue-bg */
-    --ramp-blue-bg: #E2EEF9;
-    --ramp-blue-solid: #1D5A9E;  /* UI 6.68:1 vs bg-1 · on-solid 6.98:1 */
-    --ramp-teal-text: #0F6E56;   /* 5.94:1 vs bg-1 · 5.31:1 vs teal-bg */
-    --ramp-teal-bg: #DDF2EA;
-    --ramp-teal-solid: #0F6E56;  /* UI 5.94:1 vs bg-1 · on-solid 6.20:1 */
-    --ramp-purple-text: #3C3489; /* 9.83:1 vs bg-1 · 8.65:1 vs purple-bg */
-    --ramp-purple-bg: #EBEAFB;
-    --ramp-purple-solid: #5348B8;/* UI 6.73:1 vs bg-1 · on-solid 7.03:1 */
-    --ramp-coral-text: #993C1D;  /* 6.66:1 vs bg-1 · 5.89:1 vs coral-bg */
-    --ramp-coral-bg: #F9E9E2;
-    --ramp-coral-solid: #B0431C; /* UI 5.49:1 vs bg-1 · on-solid 5.73:1 */
-    --ramp-amber-text: #7A4E09;  /* 6.88:1 vs bg-1 · 6.08:1 vs amber-bg */
-    --ramp-amber-bg: #F6EBD4;
-    --ramp-amber-solid: #8C5A0F; /* UI 5.61:1 vs bg-1 · on-solid 5.86:1 */
-    --ramp-gray-text: #444441;   /* 9.36:1 vs bg-1 · 7.98:1 vs gray-bg */
-    --ramp-gray-bg: #EBE8DF;
-    --ramp-gray-solid: #5F5D57;  /* UI 6.30:1 vs bg-1 · on-solid 6.58:1 */
-    --ramp-on-solid: #FFFFFF;    /* encre blanche sur les solids foncés */
-  }
-}
-
-/* ==========================================================================
-   3. MAPPING RAMP → variables locales
-   Poser data-ramp="<couleur>" sur .tw-move ou .tw-chip suffit :
-   les composants en dessous consomment --ramp-text / --ramp-bg /
-   --ramp-solid / --ramp-on-solid sans connaître la couleur.
-   ========================================================================== */
-/* Repli d'abord (gray si ramp inconnue) : même spécificité, donc les
-   variantes nommées déclarées APRÈS gagnent dans la cascade. */
 [data-ramp] {
   --ramp-text: var(--ramp-gray-text); --ramp-bg: var(--ramp-gray-bg); --ramp-solid: var(--ramp-gray-solid);
 }
@@ -168,9 +151,10 @@
 [data-ramp="amber"]  { --ramp-text: var(--ramp-amber-text);  --ramp-bg: var(--ramp-amber-bg);  --ramp-solid: var(--ramp-amber-solid); }
 
 /* ==========================================================================
-   4. BASE
+   3. BASE
    ========================================================================== */
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { -webkit-text-size-adjust: 100%; }
 html, body {
   margin: 0; padding: 0;
   background: var(--bg-0); color: var(--text-1);
@@ -179,309 +163,575 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 .tw-app {
-  max-width: 560px; margin: 0 auto;
-  padding: max(var(--sp-4), env(safe-area-inset-top)) var(--sp-4)
-           max(var(--sp-8), env(safe-area-inset-bottom));
+  max-width: 430px; margin: 0 auto;
+  border-inline: 1px solid var(--line);
+  min-height: 100dvh;
+  padding: max(0px, env(safe-area-inset-top)) 0 max(var(--sp-6), env(safe-area-inset-bottom));
 }
 p, h1, h2, h3 { max-width: var(--measure); }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-s); }
+:focus-visible { outline: 2px solid var(--text-1); outline-offset: 2px; border-radius: 0; }
+
+/* Tout chiffre de l'interface est un chiffre d'instrument : tabular-nums +
+   slashed-zero, sans exception. */
+.tw-hdr__date, .tw-stats, .tw-rank, .tw-step__num, .tw-readout__v,
+.tw-verdict__num, .tw-verdict__approx, .tw-verdict__unit, .tw-pipe__t,
+.tw-pipe, .tw-go, .tw-stamp, .tw-cell__v {
+  font-variant-numeric: tabular-nums slashed-zero;
+}
+
+/* Micro-label : la voix de l'instrument. */
+.tw-microlabel {
+  font-size: var(--fs-micro);
+  letter-spacing: var(--ls-micro);
+  text-transform: uppercase;
+  color: var(--text-3); /* 6.59:1 vs bg-0 */
+  line-height: var(--lh-micro);
+}
+
+/* La graduation — règle de ticks CSS, signature n°1. Décorative (<3:1) :
+   ne porte aucune information non redondante avec la structure. */
+.tw-ruler {
+  height: 10px;
+  background-image:
+    repeating-linear-gradient(90deg, var(--tick) 0 1px, transparent 1px 8px),
+    repeating-linear-gradient(90deg, var(--line-strong) 0 1px, transparent 1px 48px);
+  background-size: 100% 5px, 100% 10px;
+  background-position: bottom left, bottom left;
+  background-repeat: no-repeat;
+}
 
 /* ==========================================================================
-   5. HEADER — logo + date + headline + stats
+   4. HEADER — masthead + readout + headline
    ========================================================================== */
-.tw-hdr { padding: var(--sp-2) 0 var(--sp-4); }
-.tw-hdr__row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
+.tw-hdr { padding: 0; }
+.tw-hdr__row {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: var(--sp-3); padding: var(--sp-4) var(--sp-4) var(--sp-3);
+}
 .tw-brand { display: flex; align-items: center; gap: var(--sp-2); }
-.tw-logo { width: 28px; height: 28px; border-radius: var(--r-s); display: block; }
+.tw-logo { width: 20px; height: 20px; display: block; filter: grayscale(1) brightness(1.4); }
 .tw-brand__name {
-  font-size: var(--fs-sub); font-weight: 650; letter-spacing: var(--ls-micro);
-  text-transform: uppercase; color: var(--text-1); /* 14.80:1 vs bg-1 */
+  font-size: 13px; font-weight: 700; letter-spacing: 0.30em;
+  color: var(--text-1); /* 17.17:1 vs bg-0 */
 }
 .tw-hdr__date {
-  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
-  font-size: var(--fs-caption); color: var(--text-3); /* 6.29:1 vs bg-0 */
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro); letter-spacing: 0.08em;
+  color: var(--text-3); /* 6.59:1 vs bg-0 */
+  text-align: right; line-height: 1.4;
 }
-.tw-headline {
-  font-family: var(--font-serif);
-  font-size: var(--fs-hero); line-height: var(--lh-hero); font-weight: 500;
-  color: var(--text-1); /* 16.12:1 vs bg-0 */
-  margin: var(--sp-4) 0 var(--sp-3); text-wrap: balance;
-}
-.tw-stats {
-  display: flex; align-items: center; gap: var(--sp-4);
-  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
-  font-size: var(--fs-caption); color: var(--text-3); /* 6.29:1 vs bg-0 */
-}
-.tw-stats b { color: var(--text-1); font-weight: 650; }
 
-/* Badge "données démo" — visible mais pas alarmant */
+/* Readout : l'état du capteur — remplace la ligne prose par un registre
+   de cellules tabulaires bordées 1px (greffe jury : plus scannable). */
+.tw-stats {
+  display: flex; list-style: none; margin: 0; padding: 0;
+  border-block: 1px solid var(--line);
+}
+.tw-stats .tw-cell {
+  flex: 1 1 auto; padding: var(--sp-2) var(--sp-3);
+  border-right: 1px solid var(--line);
+  display: flex; align-items: baseline; gap: 7px; min-width: 0;
+}
+.tw-stats .tw-cell:last-child { border-right: none; flex: 0 0 auto; }
+.tw-cell__k {
+  font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-3); /* 6.59:1 vs bg-0 */
+}
+.tw-cell__v {
+  font-family: var(--font-mono);
+  font-size: 15px; font-weight: 700;
+  color: var(--text-1); /* 17.17:1 vs bg-0 */
+}
+/* Le badge DÉMO s'affiche dans la fenêtre LCD, comme sur un multimètre. */
 .tw-badge-demo {
-  display: inline-block; padding: 2px var(--sp-2); border-radius: var(--r-pill);
-  background: var(--warn-bg); color: var(--warn-text); /* 7.74:1 sombre · 6.08:1 clair */
-  font-family: var(--font-sans); font-size: var(--fs-micro); font-weight: 650;
-  letter-spacing: var(--ls-micro); text-transform: uppercase;
+  background: var(--lcd); color: var(--lcd-ink); /* 13.77:1 vs lcd */
+  font-size: var(--fs-micro); font-weight: 700; letter-spacing: var(--ls-micro);
+  text-transform: uppercase; padding: 3px 8px; align-self: center;
+  display: inline-block; border-radius: 0;
+}
+
+.tw-headline {
+  font-family: var(--font-sans);
+  font-size: var(--fs-hero); line-height: var(--lh-hero); font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--text-1); /* 17.17:1 vs bg-0 */
+  margin: var(--sp-5) var(--sp-4) var(--sp-5); text-wrap: balance;
+}
+.tw-headline::before {
+  content: "Le fil — verdict du jour";
+  display: block;
+  font-family: var(--font-sans);
+  font-size: var(--fs-micro); font-weight: 400; letter-spacing: var(--ls-micro);
+  text-transform: uppercase; color: var(--text-3);
+  margin-bottom: var(--sp-2);
 }
 
 /* ==========================================================================
-   6. CARTE MOVE
+   5. CARTE MOVE — le registre
    Structure : .tw-move[data-ramp] > .tw-move__head (toujours visible)
                + .tw-fold > .tw-move__body (contenu repliable)
    ========================================================================== */
-.tw-moves { display: flex; flex-direction: column; gap: var(--sp-3); margin-top: var(--sp-4); }
+.tw-moves { display: flex; flex-direction: column; margin-top: 0; }
 
 .tw-move {
-  position: relative;
-  background: var(--bg-1);
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--ramp-solid, var(--line-strong));
-  border-radius: var(--r-l);
-  padding: var(--sp-4);
-  box-shadow: var(--shadow-1);
+  background: var(--bg-0);
+  border: none;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  padding: var(--sp-5) var(--sp-4);
+  box-shadow: none;
 }
 .tw-move__head { cursor: pointer; }
-.tw-move__top { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.tw-move__head--static { cursor: default; }
+.tw-move__top { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
 .tw-move__title {
   font-size: var(--fs-title); line-height: var(--lh-title); font-weight: 650;
-  color: var(--text-1); /* 14.80:1 vs bg-1 */
-  margin: var(--sp-2) 0 0; text-wrap: balance;
+  letter-spacing: -0.01em;
+  color: var(--text-1); /* 17.17:1 vs bg-0 */
+  margin: var(--sp-3) 0 0; text-wrap: balance; max-width: 36ch;
 }
 .tw-meta {
-  margin-left: auto;
-  font-size: var(--fs-micro); color: var(--text-3); /* 5.78:1 vs bg-1 */
-  white-space: nowrap;
+  margin-left: 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-data); letter-spacing: 0.04em;
+  color: var(--text-2); /* 10.74:1 vs bg-0 */
+  white-space: normal;
 }
 
-/* --- Move star : le move du jour, légèrement réchauffé et ouvert --- */
-.tw-move--star { background: var(--bg-star); box-shadow: var(--shadow-star); border-color: transparent; }
+/* --- Move star : traitement STRUCTUREL, pas chromatique --- */
+.tw-move--star { background: var(--bg-0); box-shadow: none; border-color: var(--line); padding-top: var(--sp-4); }
 
-/* Badge ★ move du jour */
+/* Le tampon PRIORITÉ : la seule chose posée hors grille. Signature du
+   Calibre — une main humaine sur l'ordre de mission. Remplace l'ancien
+   badge ★ pilule. */
 .tw-badge-star {
-  display: inline-flex; align-items: center; gap: var(--sp-1);
-  padding: 3px var(--sp-2); border-radius: var(--r-pill);
-  border: 1px solid var(--gold);
-  color: var(--gold); /* 9.14:1 vs bg-star · 5.87:1 en clair */
-  font-size: var(--fs-micro); font-weight: 700;
-  letter-spacing: var(--ls-micro); text-transform: uppercase;
+  display: inline-block;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-1);           /* 17.17:1 vs bg-0 */
+  border: 1px solid var(--edge);  /* 6.59:1 vs bg-0, UI >= 3:1 */
+  padding: 3px 8px 2px;
+  transform: rotate(-1.4deg);
+  background: none;
 }
-.tw-badge-star::before { content: "★"; font-size: 12px; line-height: 1; }
+.tw-badge-star::before { content: "Priorité"; }
 
-/* Puce projet — la couleur ramp EST l'identité du projet */
+/* Puce projet — mono, discrète : l'identité vient du texte, pas d'un point
+   coloré qui ferait concurrence au jaune. */
 .tw-chip {
-  display: inline-flex; align-items: center; gap: var(--sp-1);
-  padding: 3px var(--sp-2); border-radius: var(--r-pill);
-  background: var(--ramp-bg, var(--bg-2));
-  color: var(--ramp-text, var(--text-2)); /* toutes ramps >= 5.31:1 vs leur bg */
-  font-size: var(--fs-micro); font-weight: 650; letter-spacing: 0.02em;
+  display: inline-flex; align-items: center; gap: 0;
+  padding: 0; border-radius: 0; background: none;
+  color: var(--ramp-text, var(--text-2)); /* toutes ramps >= 9.45:1 vs bg-1 (voir §1) */
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro); font-weight: 650; letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
-.tw-chip::before {
-  content: ""; width: 7px; height: 7px; border-radius: 50%;
-  background: var(--ramp-solid, var(--text-3));
-}
+.tw-chip::before { content: none; }
 
-/* "Pourquoi maintenant" — la justification, texte secondaire */
+/* Rang des moves 2..n — mono, dans le registre, jamais en compétition. */
+.tw-rank {
+  font-family: var(--font-mono);
+  font-size: 13px; font-weight: 700; letter-spacing: 0.06em;
+  color: var(--text-3); /* 6.59:1 vs bg-0 */
+}
+.tw-rank::before { content: "0"; } /* 01/02/03 — registre indexé */
+
+/* "Pourquoi maintenant" — la justification, texte secondaire, propre section. */
 .tw-why {
-  font-size: var(--fs-sub); line-height: var(--lh-sub);
-  color: var(--text-2); /* 9.49:1 vs bg-1 */
-  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-body); line-height: var(--lh-body);
+  color: var(--text-2); /* 10.74:1 vs bg-0 */
+  margin: var(--sp-4) 0 0;
+  padding-top: var(--sp-4); border-top: 1px solid var(--line);
+}
+.tw-why::before {
+  content: "Pourquoi maintenant"; display: block;
+  font-size: var(--fs-micro); letter-spacing: var(--ls-micro); text-transform: uppercase;
+  color: var(--text-3); margin-bottom: 7px; font-weight: 400;
 }
 
-/* "Do now" — LA première action, encart accentué */
+/* Insight — L'INVERSION LCD, signature n°3 : l'insight est l'unique
+   surface claire de l'écran, la fenêtre d'affichage de l'instrument. */
+.tw-insight {
+  margin: var(--sp-4) 0 0;
+  padding: var(--sp-3) var(--sp-4) var(--sp-4);
+  border: none;
+  background: var(--lcd);
+  color: var(--lcd-ink); /* 13.77:1 vs lcd */
+  font-size: 15.5px; font-weight: 550; line-height: 1.5;
+  font-style: normal;
+}
+.tw-insight::before {
+  content: "Insight"; display: block;
+  font-size: var(--fs-micro); letter-spacing: var(--ls-micro); text-transform: uppercase;
+  color: var(--lcd-mut); /* 6.91:1 vs lcd */
+  margin-bottom: 7px; font-weight: 400;
+}
+
+/* "Do now" — LA première action, cadre porteur (--edge >= 3:1 vs bg-0). */
 .tw-donow {
-  display: flex; gap: var(--sp-2); align-items: flex-start;
-  margin-top: var(--sp-3); padding: var(--sp-3);
-  background: var(--bg-2); border-radius: var(--r-m);
-  border-left: 3px solid var(--accent);
-  font-size: var(--fs-sub); line-height: var(--lh-sub);
-  color: var(--text-1); /* 13.45:1 vs bg-2 */
+  display: block;
+  margin-top: var(--sp-4); padding: 13px 14px 14px;
+  background: none; border-radius: 0;
+  border: 1px solid var(--edge); /* 6.59:1 vs bg-0 */
+  font-size: var(--fs-body); line-height: 1.5;
+  color: var(--text-1); /* 17.17:1 vs bg-0 */
 }
 .tw-donow__label {
-  flex-shrink: 0;
-  font-size: var(--fs-micro); font-weight: 700; letter-spacing: var(--ls-micro);
-  text-transform: uppercase; color: var(--accent-text); /* vs bg-2 : 6.78:1 sombre · 4.91:1 clair */
-  padding-top: 2px;
+  display: block;
+  font-size: var(--fs-micro); font-weight: 400; letter-spacing: var(--ls-micro);
+  text-transform: uppercase; color: var(--text-3); /* 6.59:1 vs bg-0 */
+  padding-top: 0; margin-bottom: 7px;
 }
 
 /* ==========================================================================
-   7. STEPS — rail vertical + barre de progression
+   6. VERDICT — le chiffre qui paie, extrait par le JS du champ title/gain
    ========================================================================== */
-/* Barre de progression : style="--done:1; --total:3" posé par le JS */
+.tw-verdict { margin: var(--sp-4) 0 0; }
+.tw-verdict__kicker {
+  font-size: var(--fs-micro); letter-spacing: var(--ls-micro); text-transform: uppercase;
+  color: var(--text-3); /* 6.59:1 vs bg-0 */
+}
+.tw-verdict__row {
+  display: flex; align-items: baseline; gap: 4px; margin-top: 2px;
+}
+.tw-verdict__approx {
+  font-family: var(--font-mono);
+  font-size: 30px; font-weight: 400; color: var(--text-3); /* 6.59:1 vs bg-0 */
+}
+.tw-verdict__num {
+  font-family: var(--font-mono);
+  font-size: var(--fs-verdict); font-weight: 700; line-height: var(--lh-verdict);
+  letter-spacing: -0.02em;
+  color: var(--text-1); /* 17.17:1 vs bg-0 */
+}
+.tw-verdict__unit {
+  font-family: var(--font-mono);
+  font-size: 30px; font-weight: 700; color: var(--text-1); /* 17.17:1 vs bg-0 */
+}
+
+/* ==========================================================================
+   7. LE GO — l'accent, famille 1/2. var(--signal) n'apparaît QUE ici et
+   dans .tw-pipe (unicité de l'accent, grep-prouvable).
+   ========================================================================== */
+.tw-go {
+  display: flex; width: 100%; min-height: 60px;
+  justify-content: space-between; align-items: center; gap: var(--sp-3);
+  padding: 10px var(--sp-4); margin-top: var(--sp-4);
+  background: var(--signal);   /* 12.57:1 vs bg-0 (saillance UI) */
+  color: var(--on-signal);     /* 12.57:1 vs signal */
+  border: 1px solid var(--signal);
+  border-radius: 0; text-align: left; cursor: pointer;
+  font-family: var(--font-sans);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.tw-go:active { transform: translateY(1px); }
+.tw-go__cmd { font-family: var(--font-mono); font-size: 20px; font-weight: 700; letter-spacing: 0.08em; }
+.tw-go__sub { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; text-align: right; line-height: 1.4; }
+
+/* Note de scaffolding sous le GO (greffe jury, la meilleure micro-copie des
+   3 maquettes) : relie le PWA au canal Telegram réel, explique le pipeline
+   sans jargon. */
+.tw-go__note {
+  margin-top: var(--sp-2);
+  font-size: var(--fs-caption); line-height: var(--lh-caption);
+  color: var(--text-3); /* 6.59:1 vs bg-0 */
+}
+/* B2 (contre-audit 2026-07-06) : l'avertissement "aperçu, rien ne part d'ici"
+   ne peut pas être la classe la plus discrète de la page — contraste monté
+   à --text-2 (10.74:1 vs bg-0, 10.18:1 vs bg-1). */
+.tw-go__note--strong { color: var(--text-2); }
+
+/* Go secondaire (moves 2-3, repliés) : filaire d'emblée, même famille de
+   couleur (signal), juste sans le fond plein. */
+.tw-go--ghost {
+  background: transparent; color: var(--signal); /* 11.91:1 vs bg-1 */
+  min-height: 52px;
+}
+.tw-go--ghost .tw-go__cmd { font-size: 16px; }
+
+/* État transmis : le plein devient filaire — l'ordre est parti. */
+.tw-go.is-sent {
+  background: transparent; border-color: var(--signal); color: var(--signal);
+  transition: background var(--dur-med) var(--ease-out), color var(--dur-med) var(--ease-out);
+  cursor: default;
+}
+
+/* ==========================================================================
+   8. STEPS — le registre du plan d'exécution (rail remplacé par numéros
+   tabulaires 01/02/03, dans l'esprit du registre indexé du Calibre).
+   ========================================================================== */
 .tw-progress {
-  height: 4px; border-radius: var(--r-pill);
-  background: var(--bg-2); overflow: hidden;
-  margin: var(--sp-3) 0;
+  height: 3px; border-radius: 0;
+  background: var(--line); overflow: hidden;
+  margin: var(--sp-4) 0 0;
 }
 .tw-progress__fill {
   height: 100%; border-radius: inherit;
-  background: var(--ramp-solid, var(--accent)); /* UI >= 5.33:1 vs bg-1 */
+  background: var(--text-2);
   width: calc(var(--done, 0) / max(var(--total, 1), 1) * 100%);
   transition: width var(--dur-med) var(--ease-out);
 }
 
-.tw-steps { display: flex; flex-direction: column; margin-top: var(--sp-2); }
-.tw-step { display: flex; gap: var(--sp-3); }
+.tw-steps {
+  display: flex; flex-direction: column; margin-top: 0; list-style: none; padding: 0;
+  padding-top: var(--sp-4); border-top: 1px solid var(--line); margin-top: var(--sp-4);
+}
+.tw-steps::before {
+  content: "Plan d'exécution"; display: block;
+  font-size: var(--fs-micro); letter-spacing: var(--ls-micro); text-transform: uppercase;
+  color: var(--text-3); margin-bottom: var(--sp-3); font-weight: 400;
+}
+.tw-step { display: flex; gap: var(--sp-3); padding: var(--sp-3) 0 2px; }
+.tw-step + .tw-step { border-top: 1px solid var(--line); margin-top: var(--sp-2); padding-top: var(--sp-4); }
 .tw-step__rail { display: flex; flex-direction: column; align-items: center; }
 .tw-step__num {
-  width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--ramp-solid, var(--text-3));
-  color: var(--ramp-on-solid); /* toutes ramps >= 5.73:1 sur leur solid */
-  font-family: var(--font-mono); font-size: var(--fs-micro); font-weight: 700;
+  width: auto; height: auto; border-radius: 0; flex-shrink: 0;
+  display: flex; align-items: flex-start; justify-content: center;
+  background: none; border: none; padding: 0;
+  color: var(--text-3); /* 6.59:1 vs bg-0 */
+  font-family: var(--font-mono); font-size: 12px; font-weight: 700;
+  cursor: pointer; position: relative;
 }
-.tw-step__line { width: 2px; flex: 1; background: var(--line); margin: var(--sp-1) 0; }
-.tw-step__body { flex: 1; min-width: 0; padding-bottom: var(--sp-4); }
-.tw-step:last-child .tw-step__body { padding-bottom: var(--sp-1); }
+button.tw-step__num::after { content: ""; position: absolute; inset: -14px -16px; }
+.tw-step__line { display: none; } /* le rail visuel est remplacé par le filet horizontal */
+.tw-step__body { flex: 1; min-width: 0; padding-bottom: 0; }
+.tw-step:last-child .tw-step__body { padding-bottom: 0; }
 .tw-step__t {
-  font-size: var(--fs-sub); font-weight: 650; line-height: var(--lh-sub);
-  color: var(--text-1); /* 14.80:1 vs bg-1 */
+  font-size: var(--fs-body); font-weight: 650; line-height: var(--lh-sub);
+  color: var(--text-1); /* 17.17:1 vs bg-0 */
 }
 .tw-step__how {
   font-size: var(--fs-sub); line-height: var(--lh-sub);
-  color: var(--text-2); /* 9.49:1 vs bg-1 */
-  margin: 2px 0 var(--sp-2);
+  color: var(--text-2); /* 10.74:1 vs bg-0 */
+  margin: 6px 0 0;
 }
 .tw-step__done {
   font-size: var(--fs-caption); line-height: var(--lh-caption);
-  color: var(--ok); /* 9.47:1 sombre · 5.94:1 clair vs bg-1 */
+  color: var(--ok); /* 9.49:1 vs bg-0 */
   margin-top: var(--sp-2);
 }
 .tw-step__done::before { content: "✓ "; font-weight: 700; }
 
-/* Step accompli : rail éteint, numéro remplacé par une coche */
-.tw-step.is-done .tw-step__num { background: var(--bg-2); color: var(--ok); border: 1px solid var(--line-strong); }
+/* Step accompli */
+.tw-step.is-done .tw-step__num { color: var(--ok); }
 .tw-step.is-done .tw-step__t { color: var(--text-3); text-decoration: line-through; text-decoration-color: var(--line-strong); }
 
 /* ==========================================================================
-   8. PASTE — bloc copiable (tap = copie)
+   9. PASTE — le coupon à découper (greffe jury : filet de coupe en
+   tirets, encoches latérales, bouton COPIER pleine largeur >=44px SOUS
+   le texte). Restylé dans le registre du Calibre : filets 1px, angles 0.
    ========================================================================== */
 .tw-paste {
   position: relative; display: block; width: 100%; text-align: left;
-  min-height: 44px; /* cible tactile confortable */
-  background: var(--bg-2); border: 1px solid var(--line);
-  border-radius: var(--r-m); padding: var(--sp-3) 44px var(--sp-3) var(--sp-3);
-  font-family: var(--font-mono); font-size: var(--fs-caption); line-height: 1.55;
-  color: var(--text-1); /* 13.45:1 vs bg-2 */
+  min-height: 44px;
+  background: var(--bg-2); border: 1px dashed var(--line-strong);
+  border-radius: 0; padding: var(--sp-3);
+  font-family: var(--font-mono); font-size: var(--fs-data); line-height: 1.6;
+  color: var(--text-1); /* 14.89:1 vs bg-2 */
   cursor: pointer; user-select: text;
-  transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease;
+  margin-top: var(--sp-2);
+  transition: border-color var(--dur-fast) ease;
 }
-.tw-paste:active { border-color: var(--accent); }
+.tw-paste:active { border-color: var(--text-2); }
+/* Encoches latérales du coupon : deux demi-cercles filaires. */
+.tw-paste::before, .tw-paste::after {
+  content: ""; position: absolute; top: 50%; width: 10px; height: 10px;
+  background: var(--bg-1); border-radius: 50%; transform: translateY(-50%);
+  border: 1px dashed var(--line-strong);
+}
+.tw-paste::before { left: -6px; border-right: none; }
+.tw-paste::after { right: -6px; border-left: none; }
+/* Bouton copier : SOUS le texte, pleine largeur, >= 44px — le pouce copie
+   après lecture. Remplace l'ancien badge .tw-paste__hint en coin. */
 .tw-paste__hint {
-  position: absolute; top: var(--sp-2); right: var(--sp-2);
-  padding: 2px 6px; border-radius: var(--r-s);
-  font-family: var(--font-sans); font-size: var(--fs-micro); font-weight: 650;
-  letter-spacing: var(--ls-micro); text-transform: uppercase;
-  color: var(--accent-text); /* vs bg-2 : 6.78:1 sombre · 4.91:1 clair */
+  position: static; display: block; width: 100%;
+  margin-top: var(--sp-2); padding: 12px;
+  background: var(--bg-1); border: 1px solid var(--line);
+  border-radius: 0; min-height: 44px;
+  font-family: var(--font-sans); font-size: var(--fs-micro); font-weight: 700;
+  letter-spacing: var(--ls-micro); text-transform: uppercase; text-align: center;
+  color: var(--text-1); /* 14.89:1 vs bg-1 */
+  transition: color var(--dur-fast) var(--ease-out);
 }
-.tw-paste__hint::before { content: "⧉ copier"; }
+.tw-paste__hint::before { content: "Copier"; }
 .tw-paste.is-copied { border-color: var(--ok); }
-.tw-paste.is-copied .tw-paste__hint { color: var(--ok); animation: tw-pop var(--dur-fast) var(--ease-out); }
-.tw-paste.is-copied .tw-paste__hint::before { content: "✓ copié"; }
+.tw-paste.is-copied .tw-paste__hint { color: var(--ok); background: var(--bg-1); }
+.tw-paste.is-copied .tw-paste__hint::before { content: "Copié ✓"; }
 
 /* ==========================================================================
-   9. QUEUE DE CARTE — "ensuite" & "aussi pour"
+   10. QUEUE DE CARTE — "ensuite" & "aussi pour"
    ========================================================================== */
 .tw-ensuite, .tw-aussi {
   font-size: var(--fs-caption); line-height: var(--lh-caption);
-  color: var(--text-2); /* 9.49:1 vs bg-1 */
+  color: var(--text-2); /* 10.74:1 vs bg-0 */
   border-top: 1px solid var(--line);
-  padding-top: var(--sp-3); margin-top: var(--sp-3);
+  padding-top: var(--sp-3); margin-top: var(--sp-4);
 }
 .tw-ensuite b, .tw-aussi b {
-  color: var(--text-3); /* 5.78:1 vs bg-1 */
-  font-size: var(--fs-micro); font-weight: 700;
+  color: var(--text-3); /* 6.59:1 vs bg-0 */
+  font-size: var(--fs-micro); font-weight: 400;
   letter-spacing: var(--ls-micro); text-transform: uppercase;
   display: block; margin-bottom: 2px;
 }
 
 /* ==========================================================================
-   10. SKILL UP — la carte apprentissage de la semaine
+   11. TES GO EN COURS — famille 2/2 du signal. Fil pipeline qui s'imprime
+   ligne par ligne (greffe jury), jauge 4 segments plan·exécution·preuve·tiré,
+   état terminal prouvé.
    ========================================================================== */
-.tw-skill {
-  background: var(--bg-1); border: 1px solid var(--line);
-  border-left: 3px solid var(--ok);
-  border-radius: var(--r-l); padding: var(--sp-4);
-  margin-top: var(--sp-3); box-shadow: var(--shadow-1);
+.tw-gos { border-top: 1px solid var(--line); padding: var(--sp-5) var(--sp-4); }
+.tw-gos::before {
+  /* B2 : le titre de section porte lui-même la nature d'aperçu — impossible
+     de confondre ce fil simulé avec l'état réel des go (qui vit sur Telegram). */
+  content: "Tes go en cours — aperçu local"; display: block;
+  font-size: var(--fs-micro); letter-spacing: var(--ls-micro); text-transform: uppercase;
+  color: var(--text-3); margin-bottom: 0; font-weight: 400;
 }
-.tw-skill__label {
-  font-size: var(--fs-micro); font-weight: 700; letter-spacing: var(--ls-micro);
-  text-transform: uppercase; color: var(--ok); /* 9.47:1 sombre · 5.94:1 clair */
-  margin-bottom: var(--sp-2);
+.tw-pipe {
+  border: 1px solid var(--line);
+  margin-top: var(--sp-3);
+  font-family: var(--font-mono);
 }
-.tw-skill p { font-size: var(--fs-sub); line-height: var(--lh-sub); color: var(--text-1); margin: 0; }
+.tw-pipe__head {
+  display: flex; align-items: baseline; gap: var(--sp-2);
+  padding: 10px var(--sp-3); border-bottom: 1px solid var(--line);
+}
+.tw-pipe__cmd { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; color: var(--text-1); } /* 17.17:1 vs bg-0 */
+.tw-pipe__proj {
+  font-size: var(--fs-micro); letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-2); /* 10.74:1 vs bg-0 */
+}
+.tw-pipe__t { margin-left: auto; font-size: var(--fs-micro); color: var(--text-3); } /* 6.59:1 vs bg-0 */
+
+/* Jauge 4 segments : plan · exécution · preuve · tiré (greffe jury). */
+.tw-pipe__gauge {
+  display: flex; gap: 2px; padding: var(--sp-2) var(--sp-3) 0; list-style: none;
+}
+.tw-pipe__gauge li {
+  flex: 1; height: 3px; background: var(--line);
+  font-size: 0; /* segment visuel, label porté par aria */
+}
+.tw-pipe__gauge li.is-done { background: var(--signal); } /* famille 2/2 du signal */
+
+.tw-pipe__feed { list-style: none; padding: var(--sp-2) var(--sp-3) var(--sp-3); margin: 0; }
+.tw-pipe__line {
+  display: flex; gap: 9px; align-items: baseline;
+  font-size: var(--fs-data); line-height: 1.6; padding-top: 6px;
+  color: var(--text-3); /* 6.59:1 vs bg-0 — en attente */
+}
+.tw-pipe__line--done { color: var(--text-2); } /* 10.74:1 vs bg-0 */
+.tw-pipe__line--done .tw-ok { color: var(--ok); font-weight: 700; } /* 9.49:1 vs bg-0 */
+.tw-pipe__line--live { color: var(--text-1); font-weight: 600; } /* 17.17:1 vs bg-0 */
+/* Le carré jaune : « exécution en cours ». Statique — l'état, pas le spectacle. */
+.tw-pipe__dot {
+  flex: 0 0 auto; width: 9px; height: 9px;
+  background: var(--signal); /* 12.57:1 vs bg-0, UI >= 3:1 */
+  transform: translateY(-1px); border-radius: 0;
+}
+/* Ligne de preuve : l'issue prouvée ferme la boucle. */
+.tw-pipe__proof {
+  font-size: var(--fs-data); color: var(--ok); font-weight: 700;
+  padding: 6px var(--sp-3) var(--sp-3); border-top: 1px solid var(--line); margin-top: var(--sp-1);
+}
+/* Impression du fil : chaque ligne de statut, 320ms. */
+.tw-pipe__line.is-print { opacity: 0; transform: translateY(4px); }
+.tw-pipe__line.is-on {
+  opacity: 1; transform: none;
+  transition: opacity var(--dur-slow) var(--ease-out), transform var(--dur-slow) var(--ease-out);
+}
 
 /* ==========================================================================
-   11. ÉTATS — jour calme, erreur, chargement
+   12. SKILL UP
    ========================================================================== */
-/* Jour calme : anneaux du radar au repos, respiration lente */
+.tw-skill {
+  background: var(--bg-0); border: none;
+  border-top: 1px solid var(--line);
+  border-radius: 0; padding: var(--sp-5) var(--sp-4);
+  margin-top: 0; box-shadow: none;
+}
+.tw-skill__label {
+  font-size: var(--fs-micro); font-weight: 400; letter-spacing: var(--ls-micro);
+  text-transform: uppercase; color: var(--text-3); /* 6.59:1 vs bg-0 */
+  margin-bottom: var(--sp-2);
+}
+.tw-skill p { font-size: var(--fs-body); line-height: var(--lh-body); color: var(--text-2); margin: 0; } /* 10.74:1 vs bg-0 */
+
+/* ==========================================================================
+   13. ÉTATS — jour calme, erreur, chargement
+   ========================================================================== */
 .tw-empty { text-align: center; padding: var(--sp-8) var(--sp-5); }
 .tw-empty__rings {
-  width: 72px; height: 72px; margin: 0 auto var(--sp-4); border-radius: 50%;
+  width: 64px; height: 64px; margin: 0 auto var(--sp-4);
+  border-radius: 50%;
   background: radial-gradient(circle,
-    var(--accent) 0 6px,        transparent 6px 15px,
-    var(--line-strong) 15px 17px, transparent 17px 26px,
-    var(--line) 26px 28px,       transparent 28px);
+    var(--text-3) 0 2px,        transparent 2px 15px,
+    var(--line-strong) 15px 16px, transparent 16px 26px,
+    var(--line) 26px 27px,       transparent 27px);
   animation: tw-breathe 4s ease-in-out infinite;
 }
 .tw-empty__t { font-size: var(--fs-body); font-weight: 650; color: var(--text-1); margin: 0 auto var(--sp-1); }
-.tw-empty__p { font-size: var(--fs-sub); color: var(--text-2); margin: 0 auto; } /* 10.33:1 vs bg-0 */
+.tw-empty__p { font-size: var(--fs-sub); color: var(--text-2); margin: 0 auto; } /* 10.74:1 vs bg-0 */
 
-/* Erreur de fetch : même gabarit, ton différent — jamais anxiogène */
 .tw-error { text-align: center; padding: var(--sp-8) var(--sp-5); }
-.tw-error__t { font-size: var(--fs-body); font-weight: 650; color: var(--err); margin: 0 auto var(--sp-1); } /* 9.03:1 sombre · 5.99:1 clair */
+.tw-error__t { font-size: var(--fs-body); font-weight: 650; color: var(--err); margin: 0 auto var(--sp-1); } /* 9.39:1 vs bg-0 */
 .tw-error__p { font-size: var(--fs-sub); color: var(--text-2); margin: 0 auto; }
 
-/* Chargement : squelettes (blocs gris qui scintillent doucement) */
 .tw-skeleton {
-  border-radius: var(--r-l); border: 1px solid var(--line);
-  background: linear-gradient(100deg, var(--bg-1) 35%, var(--bg-2) 50%, var(--bg-1) 65%);
+  border-radius: 0; border: 1px solid var(--line);
+  background: linear-gradient(100deg, var(--bg-0) 35%, var(--bg-1) 50%, var(--bg-0) 65%);
   background-size: 220% 100%;
   animation: tw-shimmer 1.6s linear infinite;
 }
-.tw-skeleton--headline { height: 56px; border: 0; border-radius: var(--r-m); margin: var(--sp-4) 0; }
+.tw-skeleton--headline { height: 56px; border: 0; border-radius: 0; margin: var(--sp-4); }
 .tw-skeleton--move { height: 128px; }
 
 /* ==========================================================================
-   12. FOOTER
+   14. FOOTER
    ========================================================================== */
 .tw-foot {
-  margin-top: var(--sp-6); text-align: center;
-  font-size: var(--fs-micro); line-height: var(--lh-micro);
-  color: var(--text-3); /* 6.29:1 vs bg-0 */
+  margin-top: 0; text-align: left; padding: var(--sp-4) var(--sp-4) var(--sp-7);
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro); line-height: 1.7; letter-spacing: 0.06em;
+  color: var(--text-3); /* 6.59:1 vs bg-0 */
 }
 
 /* ==========================================================================
-   13. MICRO-ANIMATIONS — sobres, jamais décoratives
+   15. MICRO-ANIMATIONS — sobres, jamais décoratives, auditées état par état
    ========================================================================== */
-/* Apparition des cartes : fondu + légère montée, en cascade.
-   Le JS pose style="--i:0", "--i:1", … sur chaque carte. */
 @keyframes tw-rise {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: none; }
 }
 .tw-move, .tw-skill, .tw-empty, .tw-error {
   animation: tw-rise var(--dur-med) var(--ease-out) backwards;
-  animation-delay: calc(var(--i, 0) * 55ms);
+  animation-delay: calc(var(--i, 0) * 45ms);
 }
 .tw-headline { animation: tw-rise var(--dur-med) var(--ease-out) backwards; }
 
-/* Dépliage d'un move : l'astuce grid 0fr → 1fr (hauteur animable en CSS pur) */
+/* Dépliage d'un move : grid 0fr -> 1fr, 240ms (signature du Calibre). */
 .tw-fold {
   display: grid; grid-template-rows: 0fr;
-  transition: grid-template-rows var(--dur-med) var(--ease-out);
+  visibility: hidden;
+  transition: grid-template-rows var(--dur-med) var(--ease-out),
+              visibility 0s linear var(--dur-med);
 }
 .tw-fold > .tw-move__body { overflow: hidden; min-height: 0; }
-.tw-move.is-open .tw-fold, .tw-move--star .tw-fold { grid-template-rows: 1fr; }
+.tw-move.is-open .tw-fold, .tw-move--star .tw-fold {
+  grid-template-rows: 1fr; visibility: visible; transition-delay: 0s, 0s;
+}
 
-/* Chevron d'état replié/déplié (élément .tw-move__chev dans le head) */
+/* Chevron d'état replié/déplié — remplacé par +/- dans le registre. */
 .tw-move__chev {
-  margin-left: auto; flex-shrink: 0; color: var(--text-3);
-  transition: transform var(--dur-fast) var(--ease-out);
+  margin-left: auto; flex-shrink: 0; color: var(--text-2);
+  border: 1px solid var(--line); width: 24px; height: 24px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 15px;
+  transition: none;
 }
-.tw-move__chev::before { content: "▾"; }
-.tw-move.is-open .tw-move__chev, .tw-move--star .tw-move__chev { transform: rotate(180deg); }
+.tw-move__chev::before { content: "+"; }
+.tw-move.is-open .tw-move__chev::before { content: "−"; }
+.tw-move.is-open .tw-move__chev, .tw-move--star .tw-move__chev { transform: none; }
 
-@keyframes tw-pop {
-  0% { transform: scale(0.85); } 60% { transform: scale(1.08); } 100% { transform: none; }
-}
 @keyframes tw-breathe {
   0%, 100% { transform: scale(1); opacity: 0.9; }
   50% { transform: scale(1.05); opacity: 1; }
@@ -490,83 +740,42 @@ p, h1, h2, h3 { max-width: var(--measure); }
   from { background-position: 120% 0; } to { background-position: -120% 0; }
 }
 
-/* Accessibilité : on coupe tout mouvement si l'utilisateur le demande */
+/* Accessibilité : on coupe tout mouvement si l'utilisateur le demande.
+   Le fil pipeline se rend directement à son état final (voir manifeste). */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+  .tw-pipe__line.is-print { opacity: 1; transform: none; }
 }
 
 /* ==========================================================================
-   14. COUCHE D'INTÉGRATION (ajustements fins UX) — head repliable, steps
-   cochables, bandeau hors-ligne, rang, utilitaire lecteur d'écran.
-   Uniquement des tokens existants ; aucune nouvelle couleur.
+   16. COUCHE D'INTÉGRATION — head repliable, steps cochables, bandeau
+   hors-ligne, utilitaire lecteur d'écran. Tokens existants uniquement.
    ========================================================================== */
-/* Head d'un move : cible tactile >= 44px ; variante statique pour la star */
 .tw-move__head { min-height: 44px; }
-.tw-move__head--static { cursor: default; }
 
-/* Rang des moves 2..n — mono discret, jamais en compétition avec le titre */
-.tw-rank {
-  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
-  font-size: var(--fs-caption); font-weight: 650;
-  color: var(--text-3); /* 5.78:1 vs bg-1 */
-}
-
-/* Le numéro d'étape est un bouton (cocher/décocher). Le rond fait 22px :
-   une couronne invisible de 11px l'étend à 44px de cible tactile. */
 button.tw-step__num { border: 0; padding: 0; cursor: pointer; position: relative; }
-button.tw-step__num::after { content: ""; position: absolute; inset: -11px; border-radius: 50%; }
 
-/* Paste : neutralise l'apparence native du bouton (le composant §8 fait le reste) */
 button.tw-paste { appearance: none; -webkit-appearance: none; }
 
-/* Bandeau hors-ligne : factuel, discret, jamais anxiogène */
+/* Bandeau hors-ligne : factuel, discret, jamais anxiogène. */
 .tw-banner {
   display: flex; align-items: center; gap: var(--sp-2);
-  margin-top: var(--sp-3); padding: var(--sp-2) var(--sp-3);
-  background: var(--bg-1); border: 1px solid var(--line); border-radius: var(--r-m);
+  margin: 0 var(--sp-4); padding: var(--sp-2) var(--sp-3);
+  background: var(--bg-1); border: 1px solid var(--line); border-radius: 0;
   font-size: var(--fs-caption); line-height: var(--lh-caption);
-  color: var(--text-2); /* 9.49:1 vs bg-1 */
+  color: var(--text-2); /* 9.31:1 vs bg-1 */
 }
 .tw-banner::before {
   content: ""; width: 7px; height: 7px; border-radius: 50%;
-  background: var(--warn-text); flex-shrink: 0;
+  background: var(--text-3); flex-shrink: 0;
 }
 
-/* Replié = vraiment caché : visibility retire le contenu plié de l'ordre de
-   tabulation et des lecteurs d'écran (sinon les boutons invisibles restent
-   focusables). Le délai cale le masquage sur la fin de l'animation de pli. */
-.tw-fold {
-  visibility: hidden;
-  transition: grid-template-rows var(--dur-med) var(--ease-out),
-              visibility 0s linear var(--dur-med);
-}
-.tw-move.is-open .tw-fold, .tw-move--star .tw-fold {
-  visibility: visible;
-  transition-delay: 0s, 0s;
-}
-
-/* Utilitaire : visible des lecteurs d'écran uniquement (annonces aria-live) */
 .visually-hidden {
   position: absolute; width: 1px; height: 1px; margin: -1px;
   padding: 0; border: 0; overflow: hidden;
   clip: rect(0 0 0 0); white-space: nowrap;
-}
-
-/* Insight — la lecture STRATÉGIQUE du move (champ optionnel ≤160 car, exigé pour
-   la star par le prompt d'analyse ; voir SPEC-INSIGHT-2B.md) : ce que le fait
-   IMPLIQUE, jamais sa répétition. Placé entre .tw-why et .tw-donow.
-   Filet accent + italique : distinct du fait (why) et de l'action (donow).
-   Contraste : --accent-text porte déjà ses ratios (8.12:1 sombre / 5.28:1 clair). */
-.tw-insight {
-  margin: var(--sp-3) 0 0;
-  padding: var(--sp-1) var(--sp-3);
-  border-left: 2px solid var(--accent);
-  color: var(--accent-text);
-  font-size: var(--fs-body);
-  line-height: var(--lh-body);
-  font-style: italic;
 }

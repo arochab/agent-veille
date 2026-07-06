@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#101418">
+<title>THE WIRE — Direction B · LA MORASSE</title>
+<!-- ============================================================================
+  DIRECTION B — « LA MORASSE »
+  La morasse : dans une imprimerie de presse, c'est l'épreuve de la une tirée
+  dans la nuit, que le rédacteur en chef corrige à la main avant de crier
+  « BON À TIRER ». The Wire EST la morasse d'Adam : une une imprimée à
+  1 exemplaire, et le « go » est son bon à tirer.
+
+  CHOIX ASSUMÉS (pour le jury) :
+  - DARK-ONLY, argumenté : la morasse est tirée de nuit, encre fraîche sur
+    papier sombre. Un seul thème = une seule table de contrastes, zéro
+    divergence, identité 2x plus forte. (Le brief autorise dark-only argumenté.)
+  - PAS de code couleur projet (les ramps du JSON sont ignorées visuellement) :
+    dans une une, la rubrique est NOMMÉE, pas coloriée. La couleur code la
+    DÉCISION (le go), jamais le projet.
+  - ACCENT UNIQUE --bleu = le crayon bleu du rédac-chef (l'outil historique de
+    la correction d'épreuve, "to blue-pencil"). Il n'existe que dans DEUX
+    familles de sélecteurs, grep-vérifiable :  .bat*  et  .presse*
+  - Le titre « Gagne ~290€ : ton app… » est recomposé typographiquement
+    (kicker GAGNE + chiffre géant + sous-tribune) : tous les mots du JSON
+    sont présents, aucun n'est inventé.
+  - Contenu = data/radar.demo.json, inliné verbatim (bloc JSON source en bas
+    de page pour preuve). Zéro champ inventé. Les entrées « SOUS PRESSE »
+    sont des états UI du suivi de go (hors schéma radar), marquées SPÉCIMEN.
+
+  TABLE DES CONTRASTES — CALCULÉS (WCAG 2.1, luminance relative), pas estimés :
+    #EDEFF2 (papier)  vs #101418 (noir)   = 16.06:1   texte principal
+    #EDEFF2 (papier)  vs #1A2027 (noir-2) = 14.24:1   texte sur coupon
+    #B7C0CA (gris-1)  vs #101418          = 10.05:1   texte secondaire
+    #B7C0CA (gris-1)  vs #1A2027          =  8.91:1   secondaire sur coupon
+    #8C97A4 (gris-2)  vs #101418          =  6.23:1   captions / meta
+    #8C97A4 (gris-2)  vs #1A2027          =  5.53:1   captions sur coupon
+    #101418 (noir)    vs #EDEFF2 (papier) = 16.06:1   bloc inversé « LE PARI »
+    #101418 (noir)    vs #4FC1FF (bleu)   =  9.16:1   texte du bouton GO
+    #4FC1FF (bleu)    vs #101418          =  9.16:1   texte statut pipeline
+    #4FC1FF (bleu)    vs #1A2027          =  8.13:1   segment actif vs coupon
+    #647180 (trait)   vs #101418          =  3.71:1   filets UI (>= 3:1 OK)
+    #647180 (trait)   vs #1A2027          =  3.29:1   filets sur coupon (>= 3:1 OK)
+  Le grain papier (SVG inline, opacité 5%) fait varier la luminance de < 2% :
+  toutes les paires gardent une marge > 15% au-dessus de leur seuil.
+
+  SIGNATURE PROPRIÉTAIRE (survit au noir & blanc) :
+   1. LE MARBRE CHIFFRÉ — tout chiffre de l'interface est en ui-monospace
+      tabulaire, du corps 11 (n° d'édition) au corps ~76 (le gain).
+   2. LE COUPON À DÉCOUPER — chaque texte à coller est un coupon : filet de
+      coupe en tirets + encoches latérales + bouton COPIER pleine largeur.
+   3. LES TRAITS DE COUPE — le premier geste du jour est cadré par 4 repères
+      d'imprimeur (crop marks), jamais par une carte.
+   4. LE FILET COUPÉ + BARRES D'ENCRE — chaque dépêche ouvre sur une barre
+      pleine de 6px (l'anti-hairline), chaque rubrique sur un moignon de barre.
+   5. LE TAMPON — SPÉCIMEN posé de travers sur la manchette : la
+      micro-imperfection assumée, un seul geste rugueux.
+
+  MOTION — AUDIT (chaque animation = un état, prefers-reduced-motion : tout off)
+    dépliage dépêche . 260ms  grid-rows      état plié -> déplié
+    copie coupon ..... 160ms  inversion      état copié (retour auto 1.8s)
+    go transmis ...... 160ms  inversion .bat état bon-à-tirer -> transmis
+    entrée pipeline .. 320ms  slide+fade     nouveau go apparaît sous presse
+    (aucune boucle, aucune animation décorative)
+============================================================================= -->
+<style>
+/* ==== TOKENS ============================================================= */
+:root{
+  --noir:#101418;      /* la page : encre de nuit, froide (rien du charbon chaud) */
+  --noir-2:#1A2027;    /* inset : coupons, fond des blocs techniques */
+  --papier:#EDEFF2;    /* 16.06:1 vs noir · 14.24:1 vs noir-2 — texte + barres d'encre */
+  --gris-1:#B7C0CA;    /* 10.05:1 vs noir ·  8.91:1 vs noir-2 — texte secondaire */
+  --gris-2:#8C97A4;    /*  6.23:1 vs noir ·  5.53:1 vs noir-2 — captions, meta */
+  --trait:#647180;     /*  3.71:1 vs noir ·  3.29:1 vs noir-2 — filets UI (>=3:1) */
+  --bleu:#4FC1FF;      /*  9.16:1 vs noir (texte) · encre #101418 posée dessus : 9.16:1
+                          LE CRAYON BLEU. Interdit hors de .bat* et .presse* */
+
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,"Cascadia Mono","SF Mono",Menlo,Consolas,monospace;
+
+  /* échelle typo (mobile-first 390px) */
+  --fs-micro:11px;   --fs-caption:12.5px; --fs-body:15.5px; --fs-geste:16.5px;
+  --fs-deck:19px;    --fs-dep:18.5px;
+  --fs-manchette:clamp(21px,6vw,24px);
+  --fs-masthead:clamp(44px,15.6vw,66px);
+  --fs-gain:clamp(62px,19.5vw,80px);
+
+  /* espacements — grille 4px stricte */
+  --u1:4px; --u2:8px; --u3:12px; --u4:16px; --u5:20px; --u6:24px; --u7:32px; --u8:44px;
+
+  /* motion */
+  --dur-1:160ms; --dur-2:260ms; --dur-3:320ms;
+  --ease:cubic-bezier(.22,1,.36,1);
+}
+
+/* ==== SOCLE ============================================================== */
+*{margin:0;padding:0;box-sizing:border-box;border-radius:0}
+html{background:var(--noir)}
+body{
+  background:var(--noir);color:var(--papier);
+  font:400 var(--fs-body)/1.55 var(--sans);
+  -webkit-font-smoothing:antialiased;
+  max-width:480px;margin-inline:auto;
+}
+/* grain papier : SVG inline (data URI = zéro requête externe), 5% d'opacité */
+body::after{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:9;opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+::selection{background:var(--papier);color:var(--noir)}
+:focus-visible{outline:2px solid var(--papier);outline-offset:3px}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.wrap{padding:0 18px 56px;position:relative}
+
+/* tout chiffre passe par le marbre : mono + tabulaire (signature n°1) */
+.num,.gain,.bande,.desk,.et-num,.presse-slug,.presse-etat,.et-done,.coupon-txt{
+  font-family:var(--mono);font-variant-numeric:tabular-nums lining-nums;
+}
+
+/* ==== MANCHETTE (header) ================================================= */
+.bande{
+  display:flex;justify-content:space-between;gap:var(--u3);
+  padding:14px 0 10px;border-bottom:1px solid var(--trait);
+  font:600 var(--fs-micro)/1.35 var(--mono);letter-spacing:.08em;
+  color:var(--gris-2);text-transform:uppercase;
+}
+h1.masthead{
+  font:900 var(--fs-masthead)/0.95 var(--sans);
+  letter-spacing:-.03em;text-transform:uppercase;
+  margin:10px 0 8px;
+}
+/* filet anglais inversé : barre grasse 7px + blanc 3px + maigre 1px */
+.filet{height:3px;border-top:7px solid var(--papier);border-bottom:1px solid var(--papier);margin-bottom:var(--u4)}
+h2.manchette{
+  font:900 var(--fs-manchette)/1.16 var(--sans);
+  letter-spacing:-.015em;color:var(--papier);
+  text-wrap:balance;margin:0 0 var(--u3);
+}
+.desk{
+  font:600 var(--fs-micro)/1.5 var(--mono);letter-spacing:.1em;
+  color:var(--gris-2);text-transform:uppercase;
+  padding-bottom:var(--u4);
+}
+/* le tampon SPÉCIMEN — posé de travers, à cheval sur la manchette (signature n°5) */
+.tampon{
+  position:absolute;top:46px;right:12px;transform:rotate(-4deg);
+  font:800 13px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;
+  color:var(--gris-1);            /* 10.05:1 vs noir */
+  background:var(--noir);border:2px solid var(--gris-1);
+  padding:7px 11px 6px 13px;z-index:2;
+}
+
+/* ==== RUBRIQUES / FILETS ================================================= */
+.rub{
+  display:flex;align-items:center;gap:10px;
+  font:700 12px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;
+  color:var(--papier);margin:var(--u7) 0 var(--u4);
+}
+.rub::before{content:"";width:26px;height:6px;background:var(--papier);flex:none}
+.lab{
+  font:700 var(--fs-micro)/1.35 var(--mono);letter-spacing:.16em;
+  text-transform:uppercase;color:var(--gris-2);margin-bottom:6px;
+}
+
+/* ==== LA TRIBUNE (move star, déplié) ==================================== */
+.tribune{border-top:6px solid var(--papier);padding-top:var(--u3)}
+.slug{
+  font:700 var(--fs-micro)/1.5 var(--mono);letter-spacing:.14em;
+  text-transform:uppercase;color:var(--gris-2);
+}
+.slug b{color:var(--papier);font-weight:700}
+.kicker{
+  font:700 12px/1 var(--mono);letter-spacing:.2em;color:var(--gris-1);
+  text-transform:uppercase;margin:var(--u4) 0 2px;
+}
+.gain{
+  font-size:var(--fs-gain);font-weight:700;line-height:1;
+  letter-spacing:-.02em;color:var(--papier);margin:0 0 var(--u2);
+}
+.gain .tilde{font-size:.5em;vertical-align:.5em;color:var(--gris-1);margin-right:.04em}
+.deck{
+  font:800 var(--fs-deck)/1.3 var(--sans);color:var(--papier);
+  margin:0 0 var(--u4);letter-spacing:-.005em;
+}
+
+/* le premier geste — cadré par des traits de coupe, jamais par une carte (signature n°3) */
+.geste{position:relative;padding:14px 14px 16px;margin:0 0 var(--u4)}
+.geste::before,.geste::after,.geste .cm::before,.geste .cm::after{
+  content:"";position:absolute;width:14px;height:14px;pointer-events:none
+}
+.geste::before{top:0;left:0;border-top:2px solid var(--papier);border-left:2px solid var(--papier)}
+.geste::after{bottom:0;right:0;border-bottom:2px solid var(--papier);border-right:2px solid var(--papier)}
+.geste .cm::before{top:0;right:0;border-top:2px solid var(--papier);border-right:2px solid var(--papier)}
+.geste .cm::after{bottom:0;left:0;border-bottom:2px solid var(--papier);border-left:2px solid var(--papier)}
+.geste-txt{font:600 var(--fs-geste)/1.45 var(--sans);color:var(--papier)}
+
+/* ==== LE BON À TIRER — le go. SEULE zone bleue n°1 (famille .bat*) ======= */
+.bat{
+  display:block;width:100%;min-height:64px;text-align:left;
+  background:var(--bleu);color:var(--noir);    /* encre sur bleu : 9.16:1 */
+  padding:13px 16px 14px;margin:0 0 var(--u6);
+  transition:background var(--dur-1) var(--ease),color var(--dur-1) var(--ease);
+}
+.bat:active{transform:translateY(1px)}
+.bat .l1{display:block;font:800 20px/1.2 var(--mono);letter-spacing:.02em}
+.bat .l2{display:block;font:600 11.5px/1.4 var(--mono);letter-spacing:.1em;text-transform:uppercase;margin-top:3px}
+.bat.is-sent{
+  background:transparent;color:var(--bleu);    /* bleu vs noir : 9.16:1 */
+  border:1px solid var(--bleu);cursor:default;
+}
+
+/* ==== CORPS DU MOVE ====================================================== */
+.pourquoi p{color:var(--gris-1)}
+/* l'encadré inversé : le pari du jour, en négatif (signature n°4) */
+.pari{background:var(--papier);color:var(--noir);padding:15px 16px 17px;margin:var(--u5) 0}
+.pari .lab{color:var(--noir)}                  /* 16.06:1 vs papier */
+.pari p{font:700 17px/1.4 var(--sans)}
+
+.plan{list-style:none;border-bottom:1px solid var(--trait);margin-top:var(--u2)}
+.etape{display:grid;grid-template-columns:34px 1fr;gap:0 12px;padding:14px 0;border-top:1px solid var(--trait)}
+.et-num{font-size:17px;font-weight:700;color:var(--gris-2);padding-top:2px}
+.et-t{font:700 16px/1.35 var(--sans);color:var(--papier)}
+.et-how{font-size:14.5px;color:var(--gris-1);margin-top:4px}
+
+/* le coupon à découper (signature n°2) : filet de coupe + encoches + COPIER */
+.coupon{position:relative;border:1px dashed var(--trait);background:var(--noir-2);margin-top:10px}
+.coupon::before,.coupon::after{
+  content:"";position:absolute;width:12px;height:12px;border-radius:50%;
+  background:var(--noir);border:1px dashed var(--trait);top:50%;margin-top:-7px;
+}
+.coupon::before{left:-7px}
+.coupon::after{right:-7px}
+.coupon-txt{font-size:13.5px;line-height:1.6;color:var(--papier);padding:12px 18px}
+.copier{
+  display:flex;justify-content:space-between;align-items:center;width:100%;
+  min-height:44px;padding:12px 18px;border-top:1px dashed var(--trait);
+  font:700 12px/1 var(--mono);letter-spacing:.14em;color:var(--papier);
+  transition:background var(--dur-1) var(--ease),color var(--dur-1) var(--ease);
+}
+.copier .fleche{color:var(--gris-2)}
+.copier.did{background:var(--papier);color:var(--noir)}
+.copier.did .fleche{color:var(--noir)}
+.et-done{font-size:12px;line-height:1.6;color:var(--gris-1);margin-top:10px}
+.et-done b{font-weight:700;letter-spacing:.12em;color:var(--gris-2)}
+
+.ensuite{margin-top:var(--u4)}
+.ensuite p,.aussi p{color:var(--gris-1)}
+.aussi{margin-top:var(--u4)}
+
+/* ==== DÉPÊCHES 2-3 (repliées) =========================================== */
+.dep{border-top:6px solid var(--papier);margin-top:var(--u6)}
+.dep-h{font-size:0}
+.dep-head{display:block;width:100%;min-height:44px;text-align:left;padding:12px 0 14px}
+.dep-title{display:block;font:800 var(--fs-dep)/1.28 var(--sans);letter-spacing:-.005em;color:var(--papier);margin-top:7px}
+.dep-plus{display:block;font:700 var(--fs-micro)/1 var(--mono);letter-spacing:.14em;color:var(--gris-1);margin-top:10px;text-transform:uppercase}
+.dep-body{display:grid;grid-template-rows:0fr;visibility:hidden;
+  transition:grid-template-rows var(--dur-2) var(--ease),visibility 0s var(--dur-2)}
+.dep.open .dep-body{grid-template-rows:1fr;visibility:visible;
+  transition:grid-template-rows var(--dur-2) var(--ease)}
+.dep-body>div{overflow:hidden}
+.dep-body .geste{margin-top:var(--u3)}
+.dep-body .bat{margin-top:var(--u4)}
+
+/* ==== SOUS PRESSE — les go en cours. SEULE zone bleue n°2 (famille .presse*) */
+.presse{border:1px solid var(--trait);padding:12px 14px 14px;margin-bottom:10px;list-style:none}
+.presse-slug{display:flex;justify-content:space-between;gap:var(--u3);
+  font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--papier);text-transform:uppercase}
+.presse-slug .t{font-weight:600;color:var(--gris-2);letter-spacing:.06em;text-transform:none}
+.presse-seg{margin-top:10px;line-height:0}
+.presse-seg i{display:inline-block;width:26px;height:8px;border:1px solid var(--trait);margin-right:6px}
+.presse-seg i.on{background:var(--papier);border-color:var(--papier)}
+.presse-seg i.run{background:var(--bleu);border-color:var(--bleu)}   /* UI 9.16:1 vs noir */
+.presse-etat{font-size:12px;line-height:1.6;color:var(--gris-1);margin-top:8px}
+.presse-etat b{color:var(--bleu);letter-spacing:.1em}                /* 9.16:1 vs noir */
+.presse-etat .ok{color:var(--papier);font-weight:700;letter-spacing:.1em}
+.presse.is-new{animation:pressein var(--dur-3) var(--ease)}
+@keyframes pressein{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.presse-key{font:600 var(--fs-micro)/1.5 var(--mono);letter-spacing:.1em;color:var(--gris-2);
+  text-transform:uppercase;margin:-4px 0 var(--u3)}
+
+/* ==== SUPPLÉMENT + OURS ================================================== */
+.supp p{color:var(--gris-1)}
+.ours{margin-top:var(--u8)}
+.ours .filet{margin-bottom:var(--u4)}
+.ours p{font:600 var(--fs-micro)/1.8 var(--mono);letter-spacing:.06em;color:var(--gris-2);text-transform:uppercase}
+
+/* ==== REDUCED MOTION ===================================================== */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition:none!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ================= MANCHETTE ================= -->
+  <header>
+    <div class="bande num">
+      <span>N° 0630 · Mardi 30.06.2026 · Éd. 10:00</span>
+      <span>Tirage : 1 ex.</span>
+    </div>
+    <!-- stats.demo = true -> le tampon d'imprimeur -->
+    <div class="tampon" aria-label="Édition spécimen (données de démonstration)">Spécimen</div>
+    <h1 class="masthead">The Wire</h1>
+    <div class="filet" aria-hidden="true"></div>
+    <h2 class="manchette">Deux de tes apps se font copier cette semaine, mais personne ne les vend encore. À toi de jouer le premier.</h2>
+    <!-- stats : fresh 135 / cut 9 -->
+    <p class="desk num">135 dépêches reçues au desk · 9 coupées au marbre</p>
+  </header>
+
+  <!-- ================= LA TRIBUNE — MOVE 1 (star, déplié) ================= -->
+  <!-- title JSON recomposé : « Gagne ~290€ : ton app BrandPulse peut déjà
+       vendre ce rapport, il manque juste un prix » — tous les mots sont là. -->
+  <article class="tribune" aria-label="Move 1, la tribune">
+    <p class="slug">La tribune · N°1 · <b>BrandPulse</b><br>~2h · gros gain · cash tout de suite</p>
+    <p class="kicker">Gagne</p>
+    <p class="gain num" aria-label="environ 290 euros"><span class="tilde">~</span>290€</p>
+    <h3 class="deck">Ton app BrandPulse peut déjà vendre ce rapport, il manque juste un prix</h3>
+
+    <!-- do_now -->
+    <div class="geste">
+      <b class="cm" aria-hidden="true"></b>
+      <p class="lab">Premier geste — le premier euro</p>
+      <p class="geste-txt">Ajoute cette ligne sous le titre de brandpulse-app.onrender.com (fichier index.html)&nbsp;: «&nbsp;Rapport complet + plan de correction&nbsp;: 290€, livré en 48h.&nbsp;»</p>
+    </div>
+
+    <!-- LE GO — bon à tirer -->
+    <button class="bat" type="button" data-go="1" data-projet="BrandPulse">
+      <span class="l1">GO 1 →</span>
+      <span class="l2">Bon à tirer · pipeline Fable → Sonnet</span>
+    </button>
+
+    <div class="pourquoi">
+      <p class="lab">Pourquoi maintenant</p>
+      <p>3 repos ont copié l'idée cette semaine, mais aucun ne facture le rapport. La demande existe, l'offre payante non.</p>
+    </div>
+
+    <!-- insight : l'encadré en négatif -->
+    <aside class="pari">
+      <p class="lab">Le pari du jour</p>
+      <p>Pari&nbsp;: le premier qui affiche un prix rafle les demandes — une page de vente suffit pour tester si ça paie, sans coder.</p>
+    </aside>
+
+    <p class="lab">Le plan — 3 étapes</p>
+    <ol class="plan">
+      <li class="etape">
+        <span class="et-num num">01</span>
+        <div>
+          <p class="et-t">Mets un prix sur la page</p>
+          <p class="et-how">Ajoute une ligne sous le titre dans index.html&nbsp;:</p>
+          <div class="coupon">
+            <p class="coupon-txt">Score gratuit en 60s. Rapport complet + plan de correction&nbsp;: 290€, livré en 48h.</p>
+            <button class="copier" type="button"><span>Copier le texte</span><span class="fleche" aria-hidden="true">→</span></button>
+          </div>
+          <p class="et-done num"><b>C'EST BON QUAND</b> — le prix est en ligne sur brandpulse-app.onrender.com</p>
+        </div>
+      </li>
+      <li class="etape">
+        <span class="et-num num">02</span>
+        <div>
+          <p class="et-t">Ajoute la liste des corrections au rapport (ce qui justifie les 290€)</p>
+          <p class="et-how">Colle dans Claude Code&nbsp;:</p>
+          <div class="coupon">
+            <p class="coupon-txt">Dans generate_report.py, ajoute une section «&nbsp;Top 3 corrections pour être cité par l'IA&nbsp;»&nbsp;: pour chaque requête manquante, le manque + une action concrète. Garde mon style actuel.</p>
+            <button class="copier" type="button"><span>Copier le texte</span><span class="fleche" aria-hidden="true">→</span></button>
+          </div>
+          <p class="et-done num"><b>C'EST BON QUAND</b> — report.html affiche 3 corrections sous le score</p>
+        </div>
+      </li>
+      <li class="etape">
+        <span class="et-num num">03</span>
+        <div>
+          <p class="et-t">Cherche 1 premier acheteur (sans code)</p>
+          <p class="et-how">Lance BrandPulse sur 3 marques B2B FR, envoie ce DM à chaque fondateur (remplace [X])&nbsp;:</p>
+          <div class="coupon">
+            <p class="coupon-txt">J'ai checké la visibilité de [X] dans ChatGPT face à vos concurrents — voici le rapport. Le plan de correction, je le fais pour 290€. Ça vous intéresse&nbsp;?</p>
+            <button class="copier" type="button"><span>Copier le texte</span><span class="fleche" aria-hidden="true">→</span></button>
+          </div>
+          <p class="et-done num"><b>C'EST BON QUAND</b> — 3 DMs envoyés · 1 réponse = c'est validé</p>
+        </div>
+      </li>
+    </ol>
+
+    <div class="ensuite">
+      <p class="lab">Et ensuite</p>
+      <p>Si 1 client paie une fois → propose-lui le suivi à 79€/mois (l'argent qui revient tout seul, c'est le vrai jackpot).</p>
+    </div>
+    <div class="aussi">
+      <p class="lab">Aussi pour</p>
+      <p>Le même coup — mesurer puis vendre la correction — sert aussi Claude Eats Tokens.</p>
+    </div>
+  </article>
+
+  <!-- ================= DÉPÊCHE N°2 (repliée) ================= -->
+  <article class="dep" id="dep-2">
+    <h3 class="dep-h">
+      <button class="dep-head" type="button" aria-expanded="false" aria-controls="dep-body-2">
+        <span class="slug">Dépêche N°2 · <b>Claude Eats Tokens</b> · quelques jours · bon gain</span>
+        <span class="dep-title">3 apps copient la tienne cette semaine — sors la seule qui prévient AVANT de bloquer</span>
+        <span class="dep-plus">Déplier la dépêche +</span>
+      </button>
+    </h3>
+    <div class="dep-body" id="dep-body-2">
+      <div>
+        <div class="pourquoi">
+          <p class="lab">Pourquoi maintenant</p>
+          <p>Les 3 copies comptent ce qui est déjà dépensé. Aucune ne prévient quand tu vas atteindre la limite. C'est ce qui manque à tout le monde.</p>
+        </div>
+        <div class="geste">
+          <b class="cm" aria-hidden="true"></b>
+          <p class="lab">Premier geste</p>
+          <p class="geste-txt">Mets cette phrase en titre de ta PWA&nbsp;: «&nbsp;Sache si tu peux continuer — avant de toucher la limite.&nbsp;»</p>
+        </div>
+        <p class="lab">Le plan — 2 étapes</p>
+        <ol class="plan">
+          <li class="etape">
+            <span class="et-num num">01</span>
+            <div>
+              <p class="et-t">Comprends comment le leader compte</p>
+              <p class="et-how">Ouvre le README de cctally, note sa formule de coût en 1 phrase.</p>
+              <p class="et-done num"><b>C'EST BON QUAND</b> — tu sais dire en 1 phrase comment cctally calcule, et où il se trompe</p>
+            </div>
+          </li>
+          <li class="etape">
+            <span class="et-num num">02</span>
+            <div>
+              <p class="et-t">Écris ta promesse sur la page</p>
+              <p class="et-how">Ajoute en titre de la PWA&nbsp;:</p>
+              <div class="coupon">
+                <p class="coupon-txt">Sache si tu peux continuer — avant de toucher la limite. On prévoit ta fenêtre de 5h, pas juste le passé.</p>
+                <button class="copier" type="button"><span>Copier le texte</span><span class="fleche" aria-hidden="true">→</span></button>
+              </div>
+              <p class="et-done num"><b>C'EST BON QUAND</b> — la promesse est le gros titre de ta PWA</p>
+            </div>
+          </li>
+        </ol>
+        <div class="ensuite">
+          <p class="lab">Et ensuite</p>
+          <p>Une fois la promesse posée, un post LinkedIn te positionne comme «&nbsp;le mec qui mesure le coût de l'IA&nbsp;» — utile pour vendre des audits.</p>
+        </div>
+        <button class="bat" type="button" data-go="2" data-projet="Claude Eats Tokens">
+          <span class="l1">GO 2 →</span>
+          <span class="l2">Bon à tirer · pipeline Fable → Sonnet</span>
+        </button>
+      </div>
+    </div>
+  </article>
+
+  <!-- ================= DÉPÊCHE N°3 (repliée) ================= -->
+  <article class="dep" id="dep-3">
+    <h3 class="dep-h">
+      <button class="dep-head" type="button" aria-expanded="false" aria-controls="dep-body-3">
+        <span class="slug">Dépêche N°3 · <b>Pacto Club</b> · 20 min · sans code</span>
+        <span class="dep-title">Quelqu'un cherche à louer du matériel DJ sur Reddit — contacte-le, c'est exactement ton client</span>
+        <span class="dep-plus">Déplier la dépêche +</span>
+      </button>
+    </h3>
+    <div class="dep-body" id="dep-body-3">
+      <div>
+        <div class="pourquoi">
+          <p class="lab">Pourquoi maintenant</p>
+          <p>Un post Reddit d'hier&nbsp;: une personne cherche à louer du matériel DJ et ne trouve personne. C'est pile le besoin que Pacto résout.</p>
+        </div>
+        <div class="geste">
+          <b class="cm" aria-hidden="true"></b>
+          <p class="lab">Premier geste</p>
+          <p class="geste-txt">Réponds au post avec un message simple&nbsp;: «&nbsp;Je monte un service pour ça à Paris, je peux t'aider — c'est quoi ton besoin exact&nbsp;?&nbsp;»</p>
+        </div>
+        <p class="lab">Le plan — 2 étapes</p>
+        <ol class="plan">
+          <li class="etape">
+            <span class="et-num num">01</span>
+            <div>
+              <p class="et-t">Lis le post en entier</p>
+              <p class="et-how">Ouvre le lien Reddit, repère la ville et le matériel cherché.</p>
+              <p class="et-done num"><b>C'EST BON QUAND</b> — tu sais quoi il cherche et où</p>
+            </div>
+          </li>
+          <li class="etape">
+            <span class="et-num num">02</span>
+            <div>
+              <p class="et-t">Contacte la personne</p>
+              <p class="et-how">Réponds ou envoie un message privé&nbsp;:</p>
+              <div class="coupon">
+                <p class="coupon-txt">Salut&nbsp;! Je monte justement un service de prêt de matériel DJ entre passionnés à Paris. C'est quoi ton besoin exact&nbsp;? Je peux peut-être t'aider tout de suite.</p>
+                <button class="copier" type="button"><span>Copier le texte</span><span class="fleche" aria-hidden="true">→</span></button>
+              </div>
+              <p class="et-done num"><b>C'EST BON QUAND</b> — 1 message envoyé</p>
+            </div>
+          </li>
+        </ol>
+        <div class="ensuite">
+          <p class="lab">Et ensuite</p>
+          <p>Si la personne répond, tu as ton premier vrai cas d'usage Pacto — note tout ce qu'elle dit, c'est de l'or pour ton produit.</p>
+        </div>
+        <button class="bat" type="button" data-go="3" data-projet="Pacto Club">
+          <span class="l1">GO 3 →</span>
+          <span class="l2">Bon à tirer · pipeline Fable → Sonnet</span>
+        </button>
+      </div>
+    </div>
+  </article>
+
+  <!-- ================= SOUS PRESSE — tes go en cours =================
+       États du suivi de go (hors schéma radar) — entrées SPÉCIMEN. -->
+  <section aria-label="Sous presse : tes go en cours">
+    <h3 class="rub">Sous presse — tes go en cours</h3>
+    <p class="presse-key num">Jauge : plan · exécution · preuve · tiré</p>
+    <ol id="presse-liste">
+      <li class="presse presse-active">
+        <div class="presse-slug num"><span>GO 1 · Cuepoint</span><span class="t">éd. du 27 juin</span></div>
+        <div class="presse-seg" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="run"></i><i></i></div>
+        <p class="presse-etat num"><b>SONNET EXÉCUTE 2/3</b> — la page de préinscription est en cours de pose</p>
+      </li>
+      <li class="presse presse-tire">
+        <div class="presse-slug num"><span>GO 2 · Claude Eats Tokens</span><span class="t">éd. du 24 juin</span></div>
+        <div class="presse-seg" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div>
+        <p class="presse-etat num"><span class="ok">TIRÉ ✓</span> — prouvé&nbsp;: 2 commits poussés sur master</p>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ================= LE SUPPLÉMENT (skill_up) ================= -->
+  <section class="supp" aria-label="Le supplément : monte en compétence">
+    <h3 class="rub">Le supplément — skill du jour</h3>
+    <p>Comprendre le GEO (faire en sorte que les IA comme ChatGPT recommandent une marque) en 1h. Ça rend ton pitch BrandPulse plus fort ET ça fait bien sur ton CV.</p>
+  </section>
+
+  <!-- ================= L'OURS ================= -->
+  <footer class="ours">
+    <div class="filet" aria-hidden="true"></div>
+    <p class="num">The Wire — imprimé à 1 exemplaire pour Adam Chabbi<br>
+    Rédaction&nbsp;: Fable (plan) · Sonnet (exécution)<br>
+    135 dépêches reçues · 9 coupées au marbre · éd. du 30.06.2026, 10:00<br>
+    Contrastes WCAG calculés (table dans le CSS) · 100% hors-ligne · zéro requête externe</p>
+  </footer>
+
+  <p class="visually-hidden" aria-live="polite" id="annonce"></p>
+</div>
+
+<!-- Source de vérité : data/radar.demo.json, inliné verbatim (preuve de fidélité au schéma) -->
+<script type="application/json" id="source-radar">
+{
+  "date": "2026-06-30",
+  "headline": "Deux de tes apps se font copier cette semaine, mais personne ne les vend encore. À toi de jouer le premier.",
+  "moves": [
+    {
+      "rank": "star",
+      "projet": "BrandPulse",
+      "ramp": "blue",
+      "meta": "~2h · gros gain · cash tout de suite",
+      "title": "Gagne ~290€ : ton app BrandPulse peut déjà vendre ce rapport, il manque juste un prix",
+      "pourquoi_maintenant": "3 repos ont copié l'idée cette semaine, mais aucun ne facture le rapport. La demande existe, l'offre payante non.",
+      "insight": "Pari : le premier qui affiche un prix rafle les demandes — une page de vente suffit pour tester si ça paie, sans coder.",
+      "do_now": "Ajoute cette ligne sous le titre de brandpulse-app.onrender.com (fichier index.html) : « Rapport complet + plan de correction : 290€, livré en 48h. »",
+      "steps": [
+        { "t": "Mets un prix sur la page", "how": "Ajoute une ligne sous le titre dans index.html :", "paste": "Score gratuit en 60s. Rapport complet + plan de correction : 290€, livré en 48h.", "done": "le prix est en ligne sur brandpulse-app.onrender.com" },
+        { "t": "Ajoute la liste des corrections au rapport (ce qui justifie les 290€)", "how": "Colle dans Claude Code :", "paste": "Dans generate_report.py, ajoute une section « Top 3 corrections pour être cité par l'IA » : pour chaque requête manquante, le manque + une action concrète. Garde mon style actuel.", "done": "report.html affiche 3 corrections sous le score" },
+        { "t": "Cherche 1 premier acheteur (sans code)", "how": "Lance BrandPulse sur 3 marques B2B FR, envoie ce DM à chaque fondateur (remplace [X]) :", "paste": "J'ai checké la visibilité de [X] dans ChatGPT face à vos concurrents — voici le rapport. Le plan de correction, je le fais pour 290€. Ça vous intéresse ?", "done": "3 DMs envoyés · 1 réponse = c'est validé" }
+      ],
+      "ensuite": "Si 1 client paie une fois → propose-lui le suivi à 79€/mois (l'argent qui revient tout seul, c'est le vrai jackpot).",
+      "aussi_pour": "Le même coup — mesurer puis vendre la correction — sert aussi Claude Eats Tokens."
+    },
+    {
+      "rank": "2",
+      "projet": "Claude Eats Tokens",
+      "ramp": "teal",
+      "meta": "quelques jours · bon gain",
+      "title": "3 apps copient la tienne cette semaine — sors la seule qui prévient AVANT de bloquer",
+      "pourquoi_maintenant": "Les 3 copies comptent ce qui est déjà dépensé. Aucune ne prévient quand tu vas atteindre la limite. C'est ce qui manque à tout le monde.",
+      "do_now": "Mets cette phrase en titre de ta PWA : « Sache si tu peux continuer — avant de toucher la limite. »",
+      "steps": [
+        { "t": "Comprends comment le leader compte", "how": "Ouvre le README de cctally, note sa formule de coût en 1 phrase.", "paste": "", "done": "tu sais dire en 1 phrase comment cctally calcule, et où il se trompe" },
+        { "t": "Écris ta promesse sur la page", "how": "Ajoute en titre de la PWA :", "paste": "Sache si tu peux continuer — avant de toucher la limite. On prévoit ta fenêtre de 5h, pas juste le passé.", "done": "la promesse est le gros titre de ta PWA" }
+      ],
+      "ensuite": "Une fois la promesse posée, un post LinkedIn te positionne comme « le mec qui mesure le coût de l'IA » — utile pour vendre des audits.",
+      "aussi_pour": ""
+    },
+    {
+      "rank": "3",
+      "projet": "Pacto Club",
+      "ramp": "coral",
+      "meta": "20 min · sans code",
+      "title": "Quelqu'un cherche à louer du matériel DJ sur Reddit — contacte-le, c'est exactement ton client",
+      "pourquoi_maintenant": "Un post Reddit d'hier : une personne cherche à louer du matériel DJ et ne trouve personne. C'est pile le besoin que Pacto résout.",
+      "do_now": "Réponds au post avec un message simple : « Je monte un service pour ça à Paris, je peux t'aider — c'est quoi ton besoin exact ? »",
+      "steps": [
+        { "t": "Lis le post en entier", "how": "Ouvre le lien Reddit, repère la ville et le matériel cherché.", "paste": "", "done": "tu sais quoi il cherche et où" },
+        { "t": "Contacte la personne", "how": "Réponds ou envoie un message privé :", "paste": "Salut ! Je monte justement un service de prêt de matériel DJ entre passionnés à Paris. C'est quoi ton besoin exact ? Je peux peut-être t'aider tout de suite.", "done": "1 message envoyé" }
+      ],
+      "ensuite": "Si la personne répond, tu as ton premier vrai cas d'usage Pacto — note tout ce qu'elle dit, c'est de l'or pour ton produit.",
+      "aussi_pour": ""
+    }
+  ],
+  "skill_up": "Comprendre le GEO (faire en sorte que les IA comme ChatGPT recommandent une marque) en 1h. Ça rend ton pitch BrandPulse plus fort ET ça fait bien sur ton CV.",
+  "stats": { "fresh": 135, "cut": 9, "demo": true }
+}
+</script>
+
+<script>
+/* ===========================================================================
+   INTERACTIONS — chaque mouvement est mappé à un état (audit motion) :
+   1. dépliage dépêche (260ms)  2. copie coupon (160ms)
+   3. go transmis (160ms) + entrée sous presse (320ms)
+   =========================================================================== */
+(function(){
+  "use strict";
+  var $=function(s,r){return (r||document).querySelector(s);};
+  function announce(m){$('#annonce').textContent=m;}
+
+  /* 1 — Dépliage des dépêches repliées */
+  document.querySelectorAll('.dep-head').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var dep=btn.closest('.dep');
+      var open=dep.classList.toggle('open');
+      btn.setAttribute('aria-expanded',open?'true':'false');
+      btn.querySelector('.dep-plus').textContent=open?'Replier la dépêche —':'Déplier la dépêche +';
+    });
+  });
+
+  /* 2 — Copie des coupons */
+  document.querySelectorAll('.copier').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var txt=btn.closest('.coupon').querySelector('.coupon-txt').textContent.trim();
+      var after=function(){
+        btn.classList.add('did');
+        var lbl=btn.querySelector('span');
+        lbl.textContent='Copié ✓';
+        announce('Texte copié dans le presse-papiers.');
+        setTimeout(function(){btn.classList.remove('did');lbl.textContent='Copier le texte';},1800);
+      };
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(txt).then(after,function(){fallback(txt);after();});
+      }else{fallback(txt);after();}
+      function fallback(t){
+        var ta=document.createElement('textarea');
+        ta.value=t;ta.setAttribute('readonly','');ta.style.position='absolute';ta.style.left='-9999px';
+        document.body.appendChild(ta);ta.select();
+        try{document.execCommand('copy');}catch(e){}
+        ta.remove();
+      }
+    });
+  });
+
+  /* 3 — Le bon à tirer : go N -> transmis + entrée SOUS PRESSE */
+  document.querySelectorAll('.bat').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      if(btn.classList.contains('is-sent'))return;
+      var n=btn.getAttribute('data-go');
+      var projet=btn.getAttribute('data-projet');
+      btn.classList.add('is-sent');
+      btn.setAttribute('aria-disabled','true');
+      btn.querySelector('.l1').textContent='Transmis au marbre ✓';
+      btn.querySelector('.l2').textContent='Fable ouvre le dossier '+projet+' — suivi dans « Sous presse »';
+      var li=document.createElement('li');
+      li.className='presse presse-active is-new';
+      li.innerHTML=
+        '<div class="presse-slug num"><span>GO '+n+' · '+projet+'</span><span class="t">à l\'instant</span></div>'+
+        '<div class="presse-seg" aria-hidden="true"><i class="run"></i><i></i><i></i><i></i></div>'+
+        '<p class="presse-etat num"><b>FABLE PLANIFIE</b> — lit la dépêche et découpe les étapes pour Sonnet…</p>';
+      $('#presse-liste').prepend(li);
+      announce('Go '+n+' transmis. Le pipeline Fable puis Sonnet démarre sur '+projet+'.');
+    });
+  });
+})();
+</script>
+</body>
+</html>

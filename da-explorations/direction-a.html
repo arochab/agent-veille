@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="dark" />
+<meta name="theme-color" content="#0B0D10" />
+<title>The Wire — Direction A · L'Instrument</title>
+<!--
+  ============================================================================
+  DIRECTION A — « L'INSTRUMENT »
+  Le radar comme instrument de précision financier personnel.
+  Bloomberg Terminal redessiné par Dieter Rams, en 2027, pour une seule main.
+
+  DARK-ONLY, ASSUMÉ : un instrument est calibré pour UNE condition de lecture
+  (le téléphone, le matin, 20 secondes). Une variante claire diluerait
+  l'économie de l'accent — le jaune signal n'a de valeur que sur ce fond-là.
+
+  PALETTE — tous les ratios CALCULÉS (WCAG 2.1, luminance relative) :
+    bg-0   #0B0D10   page
+    bg-1   #11141A   panneau
+    bg-2   #191D26   inset (paste)
+    ink-1  #EEF1F5   17.17:1 vs bg-0 · 16.28:1 vs bg-1 · 14.89:1 vs bg-2
+    ink-2  #BAC1CC   10.74:1 vs bg-0 · 10.18:1 vs bg-1 ·  9.31:1 vs bg-2
+    ink-3  #8E97A4    6.59:1 vs bg-0 ·  6.25:1 vs bg-1 ·  5.71:1 vs bg-2
+    signal #FFC833   12.57:1 vs bg-0 · 11.91:1 vs bg-1  (UI >= 3:1 : ok x4)
+    on-signal #0B0D10  12.57:1 vs signal
+    ok     #5FC98F    9.49:1 vs bg-0 ·  8.99:1 vs bg-1 ·  8.22:1 vs bg-2
+    lcd    #D9DFE8   panneau inversé (fenêtre d'affichage)
+    lcd-ink #10141B  13.77:1 vs lcd
+    lcd-mut #3F4854   6.91:1 vs lcd
+    Filets #262C37 / graduations #2A303B-#3A4250 : DÉCORATIFS (<3:1 voulu),
+    chaque frontière porteuse de sens est doublée par l'espacement ou par
+    une bordure --edge (#8E97A4, 6.25:1 vs bg-1, >= 3:1 UI).
+
+  UNICITÉ DE L'ACCENT (grep) : var(--signal) n'apparaît que dans DEUX
+  familles de sélecteurs : « .go » (l'action) et « .pipe » (le pipeline
+  qu'elle déclenche). Nulle part ailleurs. La couleur EST l'information.
+
+  SIGNATURE (survit au noir & blanc) :
+    1. La graduation — règles de ticks CSS entre les sections (l'échelle
+       de l'instrument), zéro image.
+    2. Le verdict tabulaire — ui-monospace, tabular-nums + slashed-zero
+       sur TOUT chiffre, gain du star à 72px.
+    3. L'inversion LCD — l'insight est la seule surface claire de l'écran :
+       la fenêtre d'affichage de l'instrument.
+    4. La grille 1px continue — angles 0, zéro ombre, zéro rayon : les moves
+       sont les cellules d'un même registre, indexées 01/02/03.
+    Micro-imperfection assumée (une seule) : le tampon PRIORITÉ posé à
+    -1.4deg, hors grille — la main humaine sur l'ordre de mission.
+
+  MOTION — auditée état par état, jamais décorative :
+    dépliage move          240ms  (grid-template-rows, ease-out)
+    copie                  160ms  (swap label bouton)
+    envoi du go            240ms  (bascule plein -> filaire)
+    impression du fil pipe 320ms  (chaque ligne de statut, décalées)
+    prefers-reduced-motion : tout instantané, séquence rendue à l'état final.
+
+  DONNÉES : contenu réel de data/radar.demo.json, inliné tel quel.
+  Règle de rendu du titre star : le gain « ~290€ » est EXTRAIT du champ
+  title (regex €) et affiché en verdict ; le reste du champ devient le
+  titre. Aucun champ inventé. data-ramp conservé sur chaque move mais
+  visuellement neutralisé : ici la couleur code la DÉCISION, pas le projet.
+  ============================================================================
+-->
+<style>
+/* ==================== TOKENS ==================== */
+:root {
+  --bg-0: #0B0D10;
+  --bg-1: #11141A;
+  --bg-2: #191D26;
+
+  --ink-1: #EEF1F5;  /* 17.17:1 vs bg-0 · 16.28:1 vs bg-1 · 14.89:1 vs bg-2 */
+  --ink-2: #BAC1CC;  /* 10.74:1 vs bg-0 · 10.18:1 vs bg-1 ·  9.31:1 vs bg-2 */
+  --ink-3: #8E97A4;  /*  6.59:1 vs bg-0 ·  6.25:1 vs bg-1 ·  5.71:1 vs bg-2 */
+
+  --signal: #FFC833;    /* 12.57:1 vs bg-0 · 11.91:1 vs bg-1 — le go, rien d'autre */
+  --on-signal: #0B0D10; /* 12.57:1 vs signal */
+  --ok: #5FC98F;        /*  9.49:1 vs bg-0 ·  8.99:1 vs bg-1 ·  8.22:1 vs bg-2 */
+
+  --lcd: #D9DFE8;       /* fenêtre d'affichage inversée */
+  --lcd-ink: #10141B;   /* 13.77:1 vs lcd */
+  --lcd-mut: #3F4854;   /*  6.91:1 vs lcd */
+
+  --grid: #262C37;        /* filet décoratif (1.32:1 vs bg-1, non porteur) */
+  --tick: #2A303B;        /* graduation mineure (décoratif) */
+  --tick-strong: #3A4250; /* graduation majeure (décoratif) */
+  --edge: #8E97A4;        /* bordure PORTEUSE : 6.25:1 vs bg-1 (>= 3:1 UI) */
+
+  --mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+  --sans: system-ui, "Segoe UI Variable Display", "Segoe UI", Roboto, sans-serif;
+
+  --dur-1: 160ms;  /* copie */
+  --dur-2: 240ms;  /* dépliage, envoi go */
+  --dur-3: 320ms;  /* impression d'une ligne du fil pipeline */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ==================== BASE ==================== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  background: var(--bg-0);
+  color: var(--ink-1);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+/* Tout chiffre de l'interface est un chiffre d'instrument. */
+.m, .idx, .gain__num, .gain__unit, .gain__approx, .meta li, .readout__v,
+.readout__k, .microlabel, .stamp, .paste__body, .paste__btn, .go, .pipe,
+.mast, .foot, .done, .step__n {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums slashed-zero;
+}
+button {
+  font: inherit; color: inherit; background: none; border: none;
+  cursor: pointer; border-radius: 0;
+}
+:focus-visible { outline: 2px solid var(--ink-1); outline-offset: 2px; }
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
+
+.frame {
+  max-width: 430px;
+  margin: 0 auto;
+  border-inline: 1px solid var(--grid);
+  min-height: 100dvh;
+  background: var(--bg-0);
+}
+
+/* Micro-label : la voix de l'instrument. */
+.microlabel {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3); /* 6.59:1 vs bg-0 · 6.25:1 vs bg-1 */
+  line-height: 1.4;
+}
+
+/* La graduation — règle de ticks, signature n°1. */
+.ruler {
+  height: 10px;
+  background-image:
+    repeating-linear-gradient(90deg, var(--tick) 0 1px, transparent 1px 8px),
+    repeating-linear-gradient(90deg, var(--tick-strong) 0 1px, transparent 1px 48px);
+  background-size: 100% 5px, 100% 10px;
+  background-position: bottom left, bottom left;
+  background-repeat: no-repeat;
+}
+
+/* ==================== MASTHEAD ==================== */
+.mast {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 16px 16px 12px;
+}
+.mast__brand {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.30em;
+  color: var(--ink-1); /* 17.17:1 vs bg-0 */
+}
+.mast__ed {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--ink-3); /* 6.59:1 vs bg-0 */
+  text-align: right;
+}
+
+/* Readout : l'état du capteur. */
+.readout {
+  display: flex;
+  border-block: 1px solid var(--grid);
+  list-style: none;
+}
+.readout li {
+  flex: 1 1 auto;
+  padding: 8px 12px;
+  border-right: 1px solid var(--grid);
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+}
+.readout li:last-child { border-right: none; flex: 0 0 auto; }
+.readout__k {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3); /* 6.59:1 vs bg-0 */
+}
+.readout__v {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink-1); /* 17.17:1 vs bg-0 */
+}
+/* Le mode DÉMO s'affiche dans la fenêtre LCD, comme sur un multimètre. */
+.readout__demo {
+  background: var(--lcd);
+  color: var(--lcd-ink); /* 13.77:1 vs lcd */
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  padding: 3px 8px;
+  align-self: center;
+}
+
+/* ==================== VERDICT DU JOUR ==================== */
+.verdict { padding: 18px 16px 20px; }
+.verdict h1 {
+  margin-top: 8px;
+  font-size: 19px;
+  font-weight: 650;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  color: var(--ink-1); /* 17.17:1 vs bg-0 */
+  max-width: 34ch;
+}
+
+/* ==================== MOVES — le registre ==================== */
+.move { border-top: 1px solid var(--grid); }
+.move--star { padding: 18px 16px 20px; }
+
+.move__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.idx {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink-3); /* 6.59:1 vs bg-0 */
+}
+/* Le tampon : la seule chose posée hors grille. Une main humaine. */
+.stamp {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-1);            /* 17.17:1 vs bg-0 */
+  border: 1px solid var(--edge);  /* 6.59:1 vs bg-0, UI >= 3:1 */
+  padding: 3px 8px 2px;
+  transform: rotate(-1.4deg);
+}
+.move__proj {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2); /* 10.74:1 vs bg-0 */
+}
+
+/* Le verdict : le chiffre qui justifie le produit. 72px, à bout de bras. */
+.gain { margin-bottom: 12px; }
+.gain__row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-top: 2px;
+}
+.gain__approx {
+  font-size: 30px;
+  font-weight: 400;
+  color: var(--ink-3); /* 6.59:1 vs bg-0 */
+}
+.gain__num {
+  font-size: 72px;
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  color: var(--ink-1); /* 17.17:1 vs bg-0 */
+}
+.gain__unit {
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--ink-1); /* 17.17:1 vs bg-0 */
+}
+
+/* Les lectures du move (champ meta, segmenté sur « · »). */
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  list-style: none;
+  border-block: 1px solid var(--grid);
+  margin-bottom: 14px;
+}
+.meta li {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--ink-2); /* 10.74:1 vs bg-0 */
+  padding: 7px 12px;
+  border-right: 1px solid var(--grid);
+}
+.meta li:first-child { padding-left: 0; }
+.meta li:last-child { border-right: none; }
+
+.move__title {
+  font-size: 16.5px;
+  font-weight: 650;
+  line-height: 1.38;
+  letter-spacing: -0.01em;
+  color: var(--ink-1); /* 17.17:1 vs bg-0 */
+  margin-bottom: 14px;
+  max-width: 36ch;
+}
+
+/* DO NOW : le premier euro. Cadre porteur (--edge >= 3:1). */
+.donow {
+  border: 1px solid var(--edge); /* 6.59:1 vs bg-0 */
+  padding: 13px 14px 14px;
+  margin-bottom: 12px;
+}
+.donow p {
+  margin-top: 7px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink-1); /* 17.17:1 vs bg-0 */
+}
+
+/* ==================== LE GO — l'accent, famille 1/2 ==================== */
+.go {
+  width: 100%;
+  min-height: 60px;
+  background: var(--signal);       /* 12.57:1 vs bg-0 (saillance UI) */
+  color: var(--on-signal);         /* 12.57:1 vs signal */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  text-align: left;
+  transition: transform var(--dur-1) var(--ease);
+}
+.go:active { transform: translateY(1px); }
+.go__cmd {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.go__sub {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: right;
+}
+/* État transmis : le plein devient filaire — l'ordre est parti. */
+.go.is-sent {
+  background: transparent;
+  border: 1px solid var(--signal);
+  color: var(--signal);            /* 12.57:1 vs bg-0 · 11.91:1 vs bg-1 */
+  transition: background var(--dur-2) var(--ease), color var(--dur-2) var(--ease);
+  cursor: default;
+}
+/* Go secondaire (moves 2-3) : filaire d'emblée, même famille. */
+.go--ghost {
+  background: transparent;
+  border: 1px solid var(--signal);
+  color: var(--signal);            /* 11.91:1 vs bg-1 */
+  min-height: 52px;
+}
+.go--ghost .go__cmd { font-size: 16px; }
+
+/* ==================== TIER 2 — la matière ==================== */
+.sect { padding-top: 16px; margin-top: 16px; border-top: 1px solid var(--grid); }
+.sect > p { margin-top: 7px; color: var(--ink-2); font-size: 15px; } /* 10.74:1 vs bg-0 */
+
+/* L'inversion LCD : l'insight est la fenêtre d'affichage. Signature n°3. */
+.lcd {
+  margin-top: 16px;
+  background: var(--lcd);
+  padding: 14px 16px 16px;
+}
+.lcd .microlabel { color: var(--lcd-mut); } /* 6.91:1 vs lcd */
+.lcd p {
+  margin-top: 7px;
+  font-size: 15.5px;
+  font-weight: 550;
+  line-height: 1.5;
+  color: var(--lcd-ink); /* 13.77:1 vs lcd */
+}
+
+/* Plan d'exécution. */
+.steps { list-style: none; }
+.step { padding: 14px 0 2px; }
+.step + .step { border-top: 1px solid var(--grid); margin-top: 12px; }
+.step__t {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--ink-1); /* 17.17:1 vs bg-0 */
+}
+.step__n {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-3); /* 6.59:1 vs bg-0 */
+  flex: 0 0 auto;
+}
+.step__how {
+  margin: 6px 0 0 26px;
+  font-size: 14px;
+  color: var(--ink-2); /* 10.74:1 vs bg-0 */
+}
+
+/* Bloc à coller : l'inset du registre. */
+.paste {
+  margin: 10px 0 0 26px;
+  border: 1px solid var(--grid);
+  background: var(--bg-2);
+}
+.paste__bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  border-bottom: 1px solid var(--grid);
+}
+.paste__bar .microlabel { align-self: center; padding: 0 12px; } /* 5.71:1 vs bg-2 */
+.paste__btn {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 14px;
+  border-left: 1px solid var(--grid);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-1); /* 14.89:1 vs bg-2 */
+  transition: color var(--dur-1) var(--ease);
+}
+.paste__btn.is-done { color: var(--ok); } /* 8.22:1 vs bg-2 */
+.paste__body {
+  padding: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink-1); /* 14.89:1 vs bg-2 */
+  white-space: pre-wrap;
+  user-select: all;
+  -webkit-user-select: all;
+}
+
+/* Fait quand : la preuve. */
+.done {
+  margin: 10px 0 12px 26px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ink-2); /* 10.74:1 vs bg-0 */
+}
+.done .ok { color: var(--ok); font-weight: 700; } /* 9.49:1 vs bg-0 */
+.done__k {
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3); /* 6.59:1 vs bg-0 */
+  font-size: 11px;
+}
+
+/* Ensuite / aussi pour. */
+.after { padding: 14px 0 0; margin-top: 14px; border-top: 1px solid var(--grid); }
+.after p { margin-top: 6px; font-size: 14px; color: var(--ink-2); } /* 10.74:1 vs bg-0 */
+
+/* ==================== MOVES 2-3 repliés ==================== */
+.movetoggle {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 34px 1fr 34px;
+  gap: 0 10px;
+  align-items: start;
+  padding: 16px;
+  text-align: left;
+  min-height: 44px;
+}
+.movetoggle .idx { padding-top: 2px; }
+.movetoggle__proj {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3); /* 6.59:1 vs bg-0 */
+  margin-bottom: 5px;
+}
+.movetoggle__title {
+  display: block;
+  font-size: 15.5px;
+  font-weight: 620;
+  line-height: 1.38;
+  color: var(--ink-1); /* 17.17:1 vs bg-0 */
+}
+.movetoggle__meta {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-3); /* 6.59:1 vs bg-0 */
+  margin-top: 7px;
+}
+.movetoggle__x {
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--ink-2); /* 10.74:1 vs bg-0 */
+  border: 1px solid var(--grid);
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  justify-self: end;
+}
+.movetoggle[aria-expanded="true"] .movetoggle__x::before { content: "−"; }
+.movetoggle[aria-expanded="false"] .movetoggle__x::before { content: "+"; }
+
+/* Dépliage : grid-template-rows, 240ms, état « dépliage ». */
+.move__fold {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--dur-2) var(--ease);
+}
+.move__fold > div { min-height: 0; overflow: hidden; }
+.move.is-open .move__fold { grid-template-rows: 1fr; }
+.move__body { padding: 0 16px 20px; }
+.move__body .sect:first-child { margin-top: 0; border-top: none; padding-top: 4px; }
+.move__body .donow { margin-top: 14px; }
+.move__body .go { margin-top: 12px; }
+
+/* ==================== TES GO EN COURS — famille 2/2 ==================== */
+.gos { border-top: 1px solid var(--grid); padding: 18px 16px 20px; }
+.pipe {
+  border: 1px solid var(--grid);
+  margin-top: 12px;
+}
+.pipe__head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--grid);
+}
+.pipe__cmd {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ink-1); /* 17.17:1 vs bg-0 */
+}
+.pipe__proj {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2); /* 10.74:1 vs bg-0 */
+}
+.pipe__t {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--ink-3); /* 6.59:1 vs bg-0 */
+}
+.pipe__feed { list-style: none; padding: 6px 12px 12px; }
+.pipe__line {
+  display: flex;
+  gap: 9px;
+  align-items: baseline;
+  font-size: 12.5px;
+  line-height: 1.6;
+  padding-top: 6px;
+  color: var(--ink-3); /* 6.59:1 vs bg-0 — en attente */
+}
+.pipe__line--done { color: var(--ink-2); } /* 10.74:1 vs bg-0 */
+.pipe__line--done .ok { color: var(--ok); font-weight: 700; } /* 9.49:1 vs bg-0 */
+.pipe__line--live { color: var(--ink-1); font-weight: 600; } /* 17.17:1 vs bg-0 */
+/* Le carré jaune : « exécution en cours ». Statique — l'état, pas le spectacle. */
+.pipe__dot {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  background: var(--signal); /* 12.57:1 vs bg-0, UI >= 3:1 */
+  transform: translateY(-1px);
+}
+/* Impression du fil : chaque ligne de statut, 320ms. État « pipeline avance ». */
+.pipe__line.is-print {
+  opacity: 0;
+  transform: translateY(4px);
+}
+.pipe__line.is-on {
+  opacity: 1;
+  transform: none;
+  transition: opacity var(--dur-3) var(--ease), transform var(--dur-3) var(--ease);
+}
+
+/* ==================== SKILL UP / FOOTER ==================== */
+.skill { border-top: 1px solid var(--grid); padding: 18px 16px 20px; }
+.skill p { margin-top: 8px; font-size: 15px; color: var(--ink-2); max-width: 60ch; } /* 10.74:1 vs bg-0 */
+
+.foot { padding: 14px 16px 28px; }
+.foot p {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  line-height: 1.7;
+  color: var(--ink-3); /* 6.59:1 vs bg-0 */
+}
+
+/* ==================== REDUCED MOTION ==================== */
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 1ms !important; animation: none !important; }
+  .pipe__line.is-print { opacity: 1; transform: none; }
+}
+</style>
+</head>
+<body>
+<div class="frame">
+
+  <!-- ============ MASTHEAD ============ -->
+  <header>
+    <div class="mast">
+      <span class="mast__brand">THE&nbsp;WIRE</span>
+      <span class="mast__ed">ÉDITION 10:00<br />MAR. 30.06.2026</span>
+    </div>
+    <div class="ruler" aria-hidden="true"></div>
+
+    <!-- stats : { fresh: 135, cut: 9, demo: true } -->
+    <ul class="readout" aria-label="État du radar">
+      <li><span class="readout__k">Signaux</span><span class="readout__v">135</span></li>
+      <li><span class="readout__k">Coupés</span><span class="readout__v">9</span></li>
+      <li><span class="readout__k">Moves</span><span class="readout__v">3</span></li>
+      <li><span class="readout__demo">DÉMO</span></li>
+    </ul>
+
+    <section class="verdict">
+      <p class="microlabel">Le fil — verdict du jour</p>
+      <h1>Deux de tes apps se font copier cette semaine, mais personne ne les vend encore. À&nbsp;toi de jouer le premier.</h1>
+    </section>
+  </header>
+
+  <div class="ruler" aria-hidden="true"></div>
+
+  <main aria-label="Moves du jour">
+
+    <!-- ============ MOVE 01 — STAR, déplié ============ -->
+    <article class="move move--star" data-ramp="blue" aria-labelledby="m1-title">
+      <div class="move__head">
+        <span class="idx" aria-hidden="true">01</span>
+        <span class="stamp">Priorité</span>
+        <span class="move__proj">BrandPulse</span>
+      </div>
+
+      <!-- Gain extrait du title (« Gagne ~290€ : … ») — règle de rendu, pas un champ inventé. -->
+      <div class="gain">
+        <p class="microlabel">Gain estimé · EUR</p>
+        <p class="gain__row">
+          <span class="gain__approx" aria-hidden="true">~</span><span class="gain__num">290</span><span class="gain__unit">€</span>
+        </p>
+      </div>
+
+      <ul class="meta" aria-label="Lectures du move">
+        <li>~2h</li>
+        <li>gros gain</li>
+        <li>cash tout de suite</li>
+      </ul>
+
+      <h2 class="move__title" id="m1-title">Ton app BrandPulse peut déjà vendre ce rapport, il manque juste un prix</h2>
+
+      <div class="donow">
+        <p class="microlabel">Maintenant — le premier euro</p>
+        <p>Ajoute cette ligne sous le titre de brandpulse-app.onrender.com (fichier index.html)&nbsp;: «&nbsp;Rapport complet + plan de correction&nbsp;: 290€, livré en 48h.&nbsp;»</p>
+      </div>
+
+      <button class="go" type="button" data-go="1" data-proj="BrandPulse" data-step1="Mets un prix sur la page">
+        <span class="go__cmd">GO&nbsp;1</span>
+        <span class="go__sub">Fable planifie<br />Sonnet exécute</span>
+      </button>
+
+      <section class="sect">
+        <p class="microlabel">Pourquoi maintenant</p>
+        <p>3 repos ont copié l'idée cette semaine, mais aucun ne facture le rapport. La demande existe, l'offre payante non.</p>
+      </section>
+
+      <section class="lcd">
+        <p class="microlabel">Insight</p>
+        <p>Pari&nbsp;: le premier qui affiche un prix rafle les demandes — une page de vente suffit pour tester si ça paie, sans coder.</p>
+      </section>
+
+      <section class="sect" aria-label="Plan d'exécution">
+        <p class="microlabel">Plan d'exécution — 3 étapes</p>
+        <ol class="steps">
+          <li class="step">
+            <p class="step__t"><span class="step__n">01</span>Mets un prix sur la page</p>
+            <p class="step__how">Ajoute une ligne sous le titre dans index.html&nbsp;:</p>
+            <div class="paste">
+              <div class="paste__bar">
+                <span class="microlabel">À coller</span>
+                <button class="paste__btn" type="button" data-copy>Copier</button>
+              </div>
+              <p class="paste__body">Score gratuit en 60s. Rapport complet + plan de correction : 290€, livré en 48h.</p>
+            </div>
+            <p class="done"><span class="ok">✓</span>&nbsp;<span class="done__k">Fait quand</span> — le prix est en ligne sur brandpulse-app.onrender.com</p>
+          </li>
+          <li class="step">
+            <p class="step__t"><span class="step__n">02</span>Ajoute la liste des corrections au rapport (ce qui justifie les 290€)</p>
+            <p class="step__how">Colle dans Claude Code&nbsp;:</p>
+            <div class="paste">
+              <div class="paste__bar">
+                <span class="microlabel">À coller</span>
+                <button class="paste__btn" type="button" data-copy>Copier</button>
+              </div>
+              <p class="paste__body">Dans generate_report.py, ajoute une section « Top 3 corrections pour être cité par l'IA » : pour chaque requête manquante, le manque + une action concrète. Garde mon style actuel.</p>
+            </div>
+            <p class="done"><span class="ok">✓</span>&nbsp;<span class="done__k">Fait quand</span> — report.html affiche 3 corrections sous le score</p>
+          </li>
+          <li class="step">
+            <p class="step__t"><span class="step__n">03</span>Cherche 1 premier acheteur (sans code)</p>
+            <p class="step__how">Lance BrandPulse sur 3 marques B2B FR, envoie ce DM à chaque fondateur (remplace [X])&nbsp;:</p>
+            <div class="paste">
+              <div class="paste__bar">
+                <span class="microlabel">À coller</span>
+                <button class="paste__btn" type="button" data-copy>Copier</button>
+              </div>
+              <p class="paste__body">J'ai checké la visibilité de [X] dans ChatGPT face à vos concurrents — voici le rapport. Le plan de correction, je le fais pour 290€. Ça vous intéresse ?</p>
+            </div>
+            <p class="done"><span class="ok">✓</span>&nbsp;<span class="done__k">Fait quand</span> — 3 DMs envoyés · 1 réponse = c'est validé</p>
+          </li>
+        </ol>
+      </section>
+
+      <div class="after">
+        <p class="microlabel">Ensuite</p>
+        <p>Si 1 client paie une fois → propose-lui le suivi à 79€/mois (l'argent qui revient tout seul, c'est le vrai jackpot).</p>
+      </div>
+      <div class="after">
+        <p class="microlabel">Aussi pour</p>
+        <p>Le même coup — mesurer puis vendre la correction — sert aussi Claude Eats Tokens.</p>
+      </div>
+    </article>
+
+    <!-- ============ MOVE 02 — replié ============ -->
+    <article class="move" data-ramp="teal" id="move-2">
+      <button class="movetoggle" type="button" aria-expanded="false" aria-controls="m2-body">
+        <span class="idx" aria-hidden="true">02</span>
+        <span>
+          <span class="movetoggle__proj">Claude Eats Tokens</span>
+          <span class="movetoggle__title">3 apps copient la tienne cette semaine — sors la seule qui prévient AVANT de bloquer</span>
+          <span class="movetoggle__meta">quelques jours · bon gain</span>
+        </span>
+        <span class="movetoggle__x" aria-hidden="true"></span>
+      </button>
+      <div class="move__fold">
+        <div>
+          <div class="move__body" id="m2-body">
+            <section class="sect">
+              <p class="microlabel">Pourquoi maintenant</p>
+              <p>Les 3 copies comptent ce qui est déjà dépensé. Aucune ne prévient quand tu vas atteindre la limite. C'est ce qui manque à tout le monde.</p>
+            </section>
+            <div class="donow">
+              <p class="microlabel">Maintenant — le premier euro</p>
+              <p>Mets cette phrase en titre de ta PWA&nbsp;: «&nbsp;Sache si tu peux continuer — avant de toucher la limite.&nbsp;»</p>
+            </div>
+            <button class="go go--ghost" type="button" data-go="2" data-proj="Claude Eats Tokens" data-step1="Comprends comment le leader compte">
+              <span class="go__cmd">GO&nbsp;2</span>
+              <span class="go__sub">Fable planifie<br />Sonnet exécute</span>
+            </button>
+            <section class="sect" aria-label="Plan d'exécution">
+              <p class="microlabel">Plan d'exécution — 2 étapes</p>
+              <ol class="steps">
+                <li class="step">
+                  <p class="step__t"><span class="step__n">01</span>Comprends comment le leader compte</p>
+                  <p class="step__how">Ouvre le README de cctally, note sa formule de coût en 1 phrase.</p>
+                  <p class="done"><span class="ok">✓</span>&nbsp;<span class="done__k">Fait quand</span> — tu sais dire en 1 phrase comment cctally calcule, et où il se trompe</p>
+                </li>
+                <li class="step">
+                  <p class="step__t"><span class="step__n">02</span>Écris ta promesse sur la page</p>
+                  <p class="step__how">Ajoute en titre de la PWA&nbsp;:</p>
+                  <div class="paste">
+                    <div class="paste__bar">
+                      <span class="microlabel">À coller</span>
+                      <button class="paste__btn" type="button" data-copy>Copier</button>
+                    </div>
+                    <p class="paste__body">Sache si tu peux continuer — avant de toucher la limite. On prévoit ta fenêtre de 5h, pas juste le passé.</p>
+                  </div>
+                  <p class="done"><span class="ok">✓</span>&nbsp;<span class="done__k">Fait quand</span> — la promesse est le gros titre de ta PWA</p>
+                </li>
+              </ol>
+            </section>
+            <div class="after">
+              <p class="microlabel">Ensuite</p>
+              <p>Une fois la promesse posée, un post LinkedIn te positionne comme «&nbsp;le mec qui mesure le coût de l'IA&nbsp;» — utile pour vendre des audits.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ============ MOVE 03 — replié ============ -->
+    <article class="move" data-ramp="coral" id="move-3">
+      <button class="movetoggle" type="button" aria-expanded="false" aria-controls="m3-body">
+        <span class="idx" aria-hidden="true">03</span>
+        <span>
+          <span class="movetoggle__proj">Pacto Club</span>
+          <span class="movetoggle__title">Quelqu'un cherche à louer du matériel DJ sur Reddit — contacte-le, c'est exactement ton client</span>
+          <span class="movetoggle__meta">20 min · sans code</span>
+        </span>
+        <span class="movetoggle__x" aria-hidden="true"></span>
+      </button>
+      <div class="move__fold">
+        <div>
+          <div class="move__body" id="m3-body">
+            <section class="sect">
+              <p class="microlabel">Pourquoi maintenant</p>
+              <p>Un post Reddit d'hier&nbsp;: une personne cherche à louer du matériel DJ et ne trouve personne. C'est pile le besoin que Pacto résout.</p>
+            </section>
+            <div class="donow">
+              <p class="microlabel">Maintenant — le premier euro</p>
+              <p>Réponds au post avec un message simple&nbsp;: «&nbsp;Je monte un service pour ça à Paris, je peux t'aider — c'est quoi ton besoin exact&nbsp;?&nbsp;»</p>
+            </div>
+            <button class="go go--ghost" type="button" data-go="3" data-proj="Pacto Club" data-step1="Lis le post en entier">
+              <span class="go__cmd">GO&nbsp;3</span>
+              <span class="go__sub">Fable planifie<br />Sonnet exécute</span>
+            </button>
+            <section class="sect" aria-label="Plan d'exécution">
+              <p class="microlabel">Plan d'exécution — 2 étapes</p>
+              <ol class="steps">
+                <li class="step">
+                  <p class="step__t"><span class="step__n">01</span>Lis le post en entier</p>
+                  <p class="step__how">Ouvre le lien Reddit, repère la ville et le matériel cherché.</p>
+                  <p class="done"><span class="ok">✓</span>&nbsp;<span class="done__k">Fait quand</span> — tu sais quoi il cherche et où</p>
+                </li>
+                <li class="step">
+                  <p class="step__t"><span class="step__n">02</span>Contacte la personne</p>
+                  <p class="step__how">Réponds ou envoie un message privé&nbsp;:</p>
+                  <div class="paste">
+                    <div class="paste__bar">
+                      <span class="microlabel">À coller</span>
+                      <button class="paste__btn" type="button" data-copy>Copier</button>
+                    </div>
+                    <p class="paste__body">Salut ! Je monte justement un service de prêt de matériel DJ entre passionnés à Paris. C'est quoi ton besoin exact ? Je peux peut-être t'aider tout de suite.</p>
+                  </div>
+                  <p class="done"><span class="ok">✓</span>&nbsp;<span class="done__k">Fait quand</span> — 1 message envoyé</p>
+                </li>
+              </ol>
+            </section>
+            <div class="after">
+              <p class="microlabel">Ensuite</p>
+              <p>Si la personne répond, tu as ton premier vrai cas d'usage Pacto — note tout ce qu'elle dit, c'est de l'or pour ton produit.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <!-- ============ TES GO EN COURS ============ -->
+  <section class="gos" aria-label="Tes go en cours">
+    <p class="microlabel">Tes go en cours</p>
+    <div id="gos-list">
+      <article class="pipe">
+        <div class="pipe__head">
+          <span class="pipe__cmd">GO&nbsp;3</span>
+          <span class="pipe__proj">Pacto Club</span>
+          <span class="pipe__t">SAM. 27.06 · 10:41</span>
+        </div>
+        <ol class="pipe__feed">
+          <li class="pipe__line pipe__line--done"><span class="ok" aria-hidden="true">✓</span>Fable — plan validé (2 étapes)</li>
+          <li class="pipe__line pipe__line--live"><span class="pipe__dot" aria-hidden="true"></span>Sonnet — exécute l'étape 2/2 : message Reddit prêt à relire</li>
+          <li class="pipe__line">Livraison — en attente de ta relecture</li>
+        </ol>
+      </article>
+    </div>
+  </section>
+
+  <!-- ============ SKILL UP ============ -->
+  <section class="skill" aria-label="Skill up de la semaine">
+    <p class="microlabel">Skill up — cette semaine</p>
+    <p>Comprendre le GEO (faire en sorte que les IA comme ChatGPT recommandent une marque) en 1h. Ça rend ton pitch BrandPulse plus fort ET ça fait bien sur ton CV.</p>
+  </section>
+
+  <div class="ruler" aria-hidden="true"></div>
+  <footer class="foot">
+    <p>THE WIRE — RADAR QUOTIDIEN · 135 SIGNAUX → 9 COUPÉS → 3 MOVES · DONNÉES DÉMO<br />0 REQUÊTE EXTERNE · 100% OFFLINE · SW&nbsp;V1</p>
+  </footer>
+</div>
+
+<div class="visually-hidden" role="status" aria-live="polite" id="live"></div>
+
+<script>
+(function () {
+  "use strict";
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var live = document.getElementById("live");
+  function say(msg) { live.textContent = ""; requestAnimationFrame(function () { live.textContent = msg; }); }
+
+  /* ---- Dépliage des moves 2-3 (état : dépliage, 240ms) ---- */
+  document.querySelectorAll(".movetoggle").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var open = btn.getAttribute("aria-expanded") === "true";
+      btn.setAttribute("aria-expanded", String(!open));
+      btn.closest(".move").classList.toggle("is-open", !open);
+    });
+  });
+
+  /* ---- Copie (état : copie, 160ms) ---- */
+  document.querySelectorAll("[data-copy]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var text = btn.closest(".paste").querySelector(".paste__body").textContent;
+      function ok() {
+        btn.classList.add("is-done");
+        btn.textContent = "Copié ✓";
+        say("Texte copié dans le presse-papiers.");
+        setTimeout(function () {
+          btn.classList.remove("is-done");
+          btn.textContent = "Copier";
+        }, 1600);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(ok, function () { fallback(); });
+      } else { fallback(); }
+      function fallback() {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand("copy"); ok(); } catch (e) {}
+        document.body.removeChild(ta);
+      }
+    });
+  });
+
+  /* ---- Le go (états : envoi 240ms, puis impression du fil 320ms/ligne) ---- */
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  document.querySelectorAll(".go").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      if (btn.classList.contains("is-sent")) return;
+      var n = btn.getAttribute("data-go");
+      var proj = btn.getAttribute("data-proj");
+      var step1 = btn.getAttribute("data-step1");
+      var now = new Date();
+      var hm = pad(now.getHours()) + ":" + pad(now.getMinutes());
+
+      btn.classList.remove("go--ghost");
+      btn.classList.add("is-sent");
+      btn.setAttribute("aria-disabled", "true");
+      btn.querySelector(".go__cmd").textContent = "TRANSMIS ✓";
+      btn.querySelector(".go__sub").innerHTML = "SUIVI DANS<br />TES GO EN COURS";
+      say("Go " + n + " transmis. Le pipeline démarre, suivi dans la section Tes go en cours.");
+
+      var entry = document.createElement("article");
+      entry.className = "pipe";
+      entry.innerHTML =
+        '<div class="pipe__head">' +
+          '<span class="pipe__cmd">GO&nbsp;' + n + "</span>" +
+          '<span class="pipe__proj">' + proj + "</span>" +
+          '<span class="pipe__t">AUJOURD’HUI · ' + hm + "</span>" +
+        "</div>" +
+        '<ol class="pipe__feed">' +
+          '<li class="pipe__line pipe__line--done is-print"><span class="ok" aria-hidden="true">✓</span>Reçu — transmis au poller</li>' +
+          '<li class="pipe__line pipe__line--live is-print" data-fable><span class="pipe__dot" aria-hidden="true"></span>Fable — lit le move et le contexte ' + proj + "…</li>" +
+          '<li class="pipe__line is-print" data-sonnet>Sonnet — en attente du plan</li>' +
+        "</ol>";
+      var list = document.getElementById("gos-list");
+      list.insertBefore(entry, list.firstChild);
+
+      var lines = entry.querySelectorAll(".pipe__line");
+      function on(el) { el.classList.add("is-on"); }
+      function fablePlan() {
+        var f = entry.querySelector("[data-fable]");
+        f.classList.remove("pipe__line--live");
+        f.classList.add("pipe__line--done");
+        f.innerHTML = '<span class="ok" aria-hidden="true">✓</span>Fable — plan prêt';
+        var s = entry.querySelector("[data-sonnet]");
+        s.classList.add("pipe__line--live");
+        s.innerHTML = '<span class="pipe__dot" aria-hidden="true"></span>Sonnet — exécute l’étape 1 : ' + step1;
+      }
+      if (reduced) {
+        lines.forEach(on);
+        fablePlan();
+      } else {
+        setTimeout(function () { on(lines[0]); }, 60);
+        setTimeout(function () { on(lines[1]); }, 380);
+        setTimeout(function () { on(lines[2]); }, 700);
+        setTimeout(fablePlan, 2200);
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>
