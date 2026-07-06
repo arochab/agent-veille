@@ -712,6 +712,65 @@ def _fichier_dur(projet_dir: str, chemin: str, date_lancement: str) -> str:
     return iso
 
 
+# '- [step 2] <preuve attendue>' dans PLAN-GO.md -> capture le numero + le texte de preuve.
+# Meme forme que _RE_STEP (digest) : le plan-go et le digest utilisent le meme langage
+# "[step N] ..." pour que le suivi puisse les mettre en regard (annonce vs obtenu).
+_RE_STEP_ATTENDU = re.compile(r"^\s*-\s*\[step\s*([0-9]{1,2})\]\s*(.*)$", re.I)
+
+
+def _lire_plan_go(projet_dir: str, date_lancement: str) -> dict:
+    """Parse PLAN-GO.md (racine projet, ecrit par le PLANIFICATEUR Fable avant le go).
+    Pur fichier, ZERO git, ZERO LLM - lecture attribuee (c'est une ANNONCE de Fable, pas
+    un fait systeme). Renvoie {} si absent ou perime.
+
+    MEME garde-fou anti-vieux-fichier que _lire_digest : un PLAN-GO.md dont la mtime est
+    ANTERIEURE au lancement de CE go appartient a une session precedente (ex un go
+    anterieur sur le meme projet) -> on l'ignore plutot que d'attribuer a tort sa preuve
+    attendue au go courant. La encore, une date affichee doit etre VRAIE ou absente.
+
+    Renvoie : {"premier_geste": str, "preuves_attendues": {n_step: str}, "mtime": iso}.
+    "premier_geste" et les preuves manquantes sont des chaines vides - jamais devinees ;
+    l'appelant doit alors ne rien afficher pour cette etape plutot que d'inventer."""
+    if not projet_dir:
+        return {}
+    p = Path(projet_dir) / "PLAN-GO.md"
+    if not p.exists():
+        return {}
+    d0 = _parse_date(date_lancement)
+    try:
+        mt = datetime.fromtimestamp(p.stat().st_mtime, tz=timezone.utc)
+    except Exception:
+        return {}
+    if d0 and mt < d0:          # PLAN-GO.md d'un go anterieur -> ignore (anti-vieux-fichier)
+        return {}
+    try:
+        txt = p.read_text(encoding="utf-8", errors="replace")
+    except Exception:
+        return {}
+
+    # section '## PREMIER GESTE (15 min max)' : tout le texte jusqu'au prochain '## '.
+    premier_geste = ""
+    m = re.search(r"##\s*PREMIER GESTE[^\n]*\n(.*?)(?=\n##\s|\Z)", txt, re.I | re.S)
+    if m:
+        premier_geste = m.group(1).strip()
+
+    # section '## PREUVE ATTENDUE' : puces '- [step N] <preuve>'.
+    preuves_attendues = {}
+    m2 = re.search(r"##\s*PREUVE ATTENDUE[^\n]*\n(.*?)(?=\n##\s|\Z)", txt, re.I | re.S)
+    if m2:
+        for ligne in m2.group(1).splitlines():
+            ms = _RE_STEP_ATTENDU.match(ligne)
+            if ms:
+                n = int(ms.group(1))
+                preuves_attendues[n] = ms.group(2).strip()
+
+    return {
+        "premier_geste": premier_geste,
+        "preuves_attendues": preuves_attendues,
+        "mtime": mt.isoformat(),
+    }
+
+
 def _lire_digest(projet_dir: str, date_lancement: str):
     """Parse THE-WIRE-DIGEST.md (racine projet). Pur fichier, ZERO git, ZERO LLM.
     Garde temporelle stricte : ignore si mtime < date_lancement (meme invariant que le
@@ -1062,6 +1121,10 @@ def _detail_en_cours(entree: dict) -> str:
     # --- CE QUE CE GO A PRODUIT : steps du plan mappes a leur preuve (dure d'abord,
     #     digest CITE en complement). Rendu uniquement si le go porte des steps figes.
     digest = _lire_digest(projet_dir, date_lancement)
+    # PLAN-GO.md (annonce de Fable AVANT que Sonnet agisse) : preuve ATTENDUE par step.
+    # Lecture ATTRIBUEE (jamais un fait systeme) - sert uniquement a afficher l'ecart
+    # "annonce vs obtenu" sur les steps non encore prouves ci-dessous.
+    plan_go = _lire_plan_go(projet_dir, date_lancement)
     steps = entree.get("steps") or []
     steps_faits_mots = set()   # mots-cles des steps prouves faits -> retires du "Reste"
     if steps:
@@ -1089,6 +1152,17 @@ def _detail_en_cours(entree: dict) -> str:
             for a in [a for a in appariement if a["etat"] == "reste"]:
                 r = _safe_html(_troncature_move(a["preuve"] or a["titre"], 90))
                 lignes.append(f"  ↔ <i>Reste (dit par Claude Code) : {r}</i>")
+        # PREUVE ATTENDUE (annoncee par Fable dans PLAN-GO.md) pour les steps qui n'ont
+        # NI preuve dure NI mention "reste" du digest : c'est l'ecart encore ouvert entre
+        # ce que Fable a promis et ce qui est deja prouve. TOUJOURS attribue a Fable,
+        # JAMAIS presente comme un fait - ce n'est qu'une annonce faite AVANT d'agir.
+        if plan_go and plan_go.get("preuves_attendues"):
+            non_prouves = [a for a in appariement if a["etat"] == "inconnu"]
+            for a in non_prouves:
+                attendu = plan_go["preuves_attendues"].get(a["n"])
+                if attendu:
+                    txt_attendu = _safe_html(_troncature_move(attendu, 90))
+                    lignes.append(f"  ⏳ <i>attendu (annonce par Fable) : {txt_attendu}</i>")
 
     # OBSERVE du digest : ce que Claude Code a AUDITE sans produire de fichier. TOUJOURS
     # cite comme temoignage ("d'apres Claude Code"), JAMAIS promu en fait systeme (pas de
@@ -1589,7 +1663,12 @@ def _insight(g: dict, num: int) -> str:
     if s == "fait":
         pr = _preuve_citee(g)
         pr = f" <i>[{pr}]</i>" if pr else ""
-        return f"✅ {tete} - <b>fait</b>, shippé.{pr} À monétiser si ce n'est pas déjà le cas."
+        # Rappel explicite du geste suivant (mission post-go) : "fait" n'est que la moitie
+        # du chemin cash - la boucle action -> preuve -> payee ne se ferme que quand Adam
+        # tape "paye N <montant>". On le redit ici pour ne jamais laisser un "fait" en
+        # impasse silencieuse.
+        return (f"✅ {tete} - <b>fait</b>, shippé.{pr} À monétiser si ce n'est pas déjà le cas. "
+                f"Tape « paye {num} &lt;montant&gt; » quand l'euro tombe.")
     if s == "probablement_fait":
         h = next((x for x in reversed(g.get("hypotheses", [])) if x.get("verdict") == "probablement_fait"), {})
         pr = h.get("preuve_citee", "")

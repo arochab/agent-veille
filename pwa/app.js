@@ -3,13 +3,19 @@
    Rendu conforme à DESIGN-SPEC.md + pwa/design-system.css (« LE CALIBRE ») :
    readout → verdict/headline → move ★ déplié (stamp, verdict €, do now, GO,
    insight LCD, plan d'exécution) → moves repliés (registre 01/02/03) →
-   tes go en cours (pipeline local) → skill → footer.
+   tes go - état réel (lu de go_suivi.json) → aperçus locaux (conditionnel) →
+   skill → footer.
    États : squelettes au chargement, jour calme élégant, erreur factuelle,
    bandeau hors-ligne (dernière version gardée en localStorage), badge démo.
 
    RÈGLE DURE : ce fichier ne parle JAMAIS au poller réel ni au réseau Telegram.
-   Le pipeline "Tes go en cours" est un miroir visuel LOCAL (localStorage) du
-   rituel "go N" réel - aucune requête sortante n'est ajoutée par ce module. */
+   Deux sections distinctes, jamais fusionnées (VISION-ACTIVATION §2) :
+   1. « Tes go - état réel » : lecture SEULE de data/go_suivi.json (same-origin,
+      exactement comme radar.json). Champs RECOPIÉS, zéro calcul d'état côté
+      front. Fichier absent (GitHub Pages, données privées) -> section masquée.
+   2. « Aperçus locaux » : pipeline simulé en localStorage, toujours au
+      conditionnel, jamais confondu avec un go réel - aucune requête sortante
+      n'est ajoutée par ce module. */
 (function () {
   "use strict";
 
@@ -20,6 +26,22 @@
   var RAMPS = { blue: 1, teal: 1, purple: 1, coral: 1, amber: 1, gray: 1 };
   var reducedMotion = false;
   try { reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) {}
+
+  /* Lexique des statuts (même voix que systeme/suivi_go.py::_insight - un
+     statut = un émoji = un libellé, jamais réinventé côté front). "ordre"
+     sert uniquement au tri d'affichage (le plus actionnable en tête), copié
+     de systeme/suivi_go.py::_ORDRE_ACTION. */
+  var STATUTS = {
+    paye:             { emoji: "💶", label: "a payé",            ordre: 0 },
+    fait:             { emoji: "✅", label: "fait, shippé",      ordre: 1 },
+    probablement_fait:{ emoji: "🟡", label: "probablement fait", ordre: 2 },
+    en_cours:         { emoji: "🛠️", label: "tu bosses dessus",  ordre: 3 },
+    projet_bouge:     { emoji: "🔨", label: "ça avance",         ordre: 4 },
+    lance:            { emoji: "🚀", label: "lancé",             ordre: 5 },
+    dormant:          { emoji: "💤", label: "dormant",           ordre: 6 },
+    dormant_archive:  { emoji: "💤", label: "dormant",           ordre: 6 },
+    skip:             { emoji: "⏭️", label: "classé",            ordre: 7 }
+  };
 
   /* ---------- utilitaires ---------- */
 
@@ -48,6 +70,25 @@
     return (v < 10 ? "0" : "") + v;
   }
 
+  /* Date relative lisible - PUR FORMATAGE d'une date ISO déjà présente dans
+     le JSON (dernier_check/date_lancement), aucune inférence de statut.
+     Même échelle que systeme/suivi_go.py::_il_y_a (voix identique). */
+  function ilYA(iso) {
+    if (!iso) return "";
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    var secs = (Date.now() - d.getTime()) / 1000;
+    if (secs < 0) secs = 0;
+    var mins = Math.floor(secs / 60);
+    if (mins < 1) return "à l'instant";
+    if (mins < 60) return "il y a " + mins + " min";
+    var heures = Math.floor(mins / 60);
+    if (heures < 24) return "il y a " + heures + " h";
+    var jours = Math.floor(heures / 24);
+    if (jours === 1) return "hier";
+    return "il y a " + jours + " j";
+  }
+
   /* ---------- chargement ---------- */
 
   function loadRadar() {
@@ -58,6 +99,22 @@
       return fetch(url, { cache: "no-store" })
         .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
         .then(function (j) { j.__source = url; return j; })
+        .catch(function () { return tryNext(); });
+    }
+    return tryNext();
+  }
+
+  /* Chargement tolérant, même-origine, pour une liste de sources optionnelles
+     (go_suivi.json, projets.json) : jamais d'erreur remontée à l'appelant,
+     null si tout échoue ou si la liste est vide/absente - c'est la condition
+     "fichier absent -> section masquée, rien d'inventé" de VISION-ACTIVATION §2. */
+  function loadOptional(sourcesKey) {
+    var sources = (window[sourcesKey] || []).slice();
+    function tryNext() {
+      if (!sources.length) return Promise.resolve(null);
+      var url = sources.shift();
+      return fetch(url, { cache: "no-store" })
+        .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
         .catch(function () { return tryNext(); });
     }
     return tryNext();
@@ -226,7 +283,14 @@
          transmet RIEN au vrai poller. La note le dit sans ambiguïté et son
          contraste est monté d'un cran (classe --strong, --text-2). */
       body += '<p class="tw-go__note tw-go__note--strong">Aperçu : ce bouton simule le déroulé. ' +
-        'Le vrai lancement, c\'est répondre «&nbsp;go&nbsp;' + esc(goNum) + '&nbsp;» sur Telegram.</p>';
+        'Le vrai lancement, c\'est répondre «&nbsp;go&nbsp;' + esc(goNum) + '&nbsp;» sur Telegram - ' +
+        'Fable pose le plan, Sonnet exécute sous ton contrôle, le plan tombe en 2 à 8 min.</p>';
+      /* Le SEUL pont vers le réel (VISION-ACTIVATION §2) : un presse-papiers.
+         Copie littéralement "go N" - zéro requête, zéro contact poller. */
+      body += '<button type="button" class="tw-copygo" data-copy="go ' + esc(goNum) + '" ' +
+        'aria-label="Copier le texte go ' + esc(goNum) + ', à coller dans Telegram">' +
+        '<span class="tw-copygo__hint" aria-hidden="true"></span>Copier «&nbsp;go&nbsp;' + esc(goNum) + '&nbsp;»' +
+      '</button>';
     }
     if (steps.length) {
       body += '<div class="tw-progress" style="--done:' + doneList.length + ';--total:' + steps.length +
@@ -252,12 +316,15 @@
     '</article>';
   }
 
-  /* ---------- pipeline local "Tes go en cours" ----------
+  /* ---------- pipeline local "Aperçus locaux - rien n'est parti" ----------
      Miroir visuel du rituel Telegram réel : quand Adam tape GO ici, on ne
      transmet rien nulle part (aucun fetch, aucun accès à data/executer_move.lock,
-     aucune écriture hors localStorage) - on affiche juste, en local, la même
-     séquence que celle que le vrai pipeline Fable→Sonnet produit une fois
-     "go N" envoyé sur Telegram. Persisté pour survivre à un rafraîchissement. */
+     aucune écriture hors localStorage) - on affiche juste, en local et AU
+     CONDITIONNEL, la séquence que le vrai pipeline Fable→Sonnet produirait une
+     fois "go N" envoyé sur Telegram. Persisté pour survivre à un rafraîchissement.
+     Jamais d'accompli simulé à l'indicatif (contre-audit 2026-07-06, B2) :
+     aucun état "fait"/"tiré" n'est atteignable ici, seulement plan/exécution
+     simulés, toujours nommés comme tels. */
 
   function loadGos() {
     var raw = lsGet(GOS_KEY);
@@ -270,8 +337,8 @@
   function saveGos(list) { lsSet(GOS_KEY, JSON.stringify(list.slice(0, 8))); }
 
   function pipeGaugeHtml(stage) {
-    // stage : 0 aucun, 1 plan, 2 exécution, 3 preuve, 4 tiré
-    var labels = ["Plan", "Exécution", "Preuve", "Tiré"];
+    // stage : 0 aucun, 1 plan (simulé), 2 exécution (simulée)
+    var labels = ["Plan", "Exécution"];
     return '<ul class="tw-pipe__gauge" aria-hidden="true">' +
       labels.map(function (_, i) {
         return '<li class="' + (stage > i ? "is-done" : "") + '"></li>';
@@ -281,20 +348,17 @@
   function renderPipe(entry) {
     var stageGauge = entry.stage || 1;
     var feedHtml;
-    if (entry.stage >= 3) {
+    if (entry.stage >= 2) {
       feedHtml =
         '<li class="tw-pipe__line tw-pipe__line--done"><span class="tw-ok" aria-hidden="true">✓</span>Aperçu - le vrai go se lance sur Telegram</li>' +
-        '<li class="tw-pipe__line tw-pipe__line--done"><span class="tw-ok" aria-hidden="true">✓</span>Fable - plan prêt</li>' +
-        '<li class="tw-pipe__line tw-pipe__line--done"><span class="tw-ok" aria-hidden="true">✓</span>Sonnet - étape 1 exécutée : ' + esc(entry.step1 || "") + '</li>';
+        '<li class="tw-pipe__line tw-pipe__line--done"><span class="tw-ok" aria-hidden="true">✓</span>Fable poserait le plan - en vrai : 2 à 8 min</li>' +
+        '<li class="tw-pipe__line tw-pipe__line--live"><span class="tw-pipe__dot" aria-hidden="true"></span>Sonnet exécuterait l’étape 1&nbsp;: ' + esc(entry.step1 || "") + '</li>';
     } else {
       feedHtml =
         '<li class="tw-pipe__line tw-pipe__line--done is-print"><span class="tw-ok" aria-hidden="true">✓</span>Aperçu - le vrai go se lance sur Telegram</li>' +
-        '<li class="tw-pipe__line tw-pipe__line--live is-print" data-fable><span class="tw-pipe__dot" aria-hidden="true"></span>Fable - lit le move et le contexte ' + esc(entry.proj) + '…</li>' +
-        '<li class="tw-pipe__line is-print" data-sonnet>Sonnet - en attente du plan</li>';
+        '<li class="tw-pipe__line tw-pipe__line--live is-print" data-fable><span class="tw-pipe__dot" aria-hidden="true"></span>Fable poserait le plan pour ' + esc(entry.proj) + '…</li>' +
+        '<li class="tw-pipe__line is-print" data-sonnet>Sonnet, ensuite - en attente du plan</li>';
     }
-    var proof = entry.stage >= 3
-      ? '<p class="tw-pipe__proof">TIRÉ ✓ - la preuve (commit, message, euro) clôt le go</p>'
-      : "";
     return '<article class="tw-pipe" data-gid="' + esc(entry.id) + '">' +
       '<div class="tw-pipe__head">' +
         '<span class="tw-pipe__cmd">GO&nbsp;' + esc(entry.n) + '</span>' +
@@ -303,7 +367,8 @@
       '</div>' +
       pipeGaugeHtml(stageGauge) +
       '<ol class="tw-pipe__feed">' + feedHtml + '</ol>' +
-      proof +
+      '<p class="tw-pipe__proof">Rythme simulé ici : ~2 s. En vrai sur Telegram : 2 à 8 min - ' +
+        'le plan de Fable est plus long à écrire qu’à lire.</p>' +
     '</article>';
   }
 
@@ -315,6 +380,92 @@
     if (!gos.length) { section.hidden = true; list.innerHTML = ""; return; }
     section.hidden = false;
     list.innerHTML = gos.map(renderPipe).join("");
+  }
+
+  /* ---------- « Tes go - état réel » (lu de data/go_suivi.json) ----------
+     VISION-ACTIVATION §2 : lecture SEULE, same-origin, exactement comme
+     radar.json. Champs RECOPIÉS du JSON produit par systeme/suivi_go.py -
+     ZÉRO calcul d'état côté front (le statut, les preuves, le montant sont
+     déjà décidés côté Python avec sa hiérarchie anti-hallucination). Le seul
+     "calcul" toléré ici est un lookup TEXTE PUR (nom d'affichage + ramp
+     couleur depuis data/projets.json - même nature que RAMPS[m.ramp] déjà
+     fait pour les moves), jamais une déduction de statut. Fichier go_suivi.json
+     absent (GitHub Pages, données privées) -> section masquée, rien d'inventé. */
+
+  function projetLookup(projetsData, slugBrut) {
+    var slug = String(slugBrut || "").trim().toLowerCase();
+    if (!projetsData || !projetsData.projets) return null;
+    if (projetsData.projets[slugBrut]) return projetsData.projets[slugBrut];
+    // repli alias : recherche exacte sur les clés + alias déclarés (texte pur)
+    var keys = Object.keys(projetsData.projets);
+    for (var i = 0; i < keys.length; i++) {
+      var info = projetsData.projets[keys[i]];
+      if (keys[i].toLowerCase() === slug) return info;
+      var alias = info.alias || [];
+      for (var j = 0; j < alias.length; j++) {
+        if (String(alias[j]).toLowerCase() === slug) return info;
+      }
+    }
+    return null;
+  }
+
+  function renderEtatReel(g, num, projetsData) {
+    var info = projetLookup(projetsData, g.projet);
+    var nomAffiche = info && info.nom_affichage ? info.nom_affichage : (g.projet || "?");
+    var ramp = info && RAMPS[info.ramp] ? info.ramp : "gray";
+    var st = STATUTS[g.statut] || { emoji: "🚀", label: g.statut || "lancé", ordre: 9 };
+
+    var montantHtml = (g.statut === "paye" && g.montant)
+      ? '<span class="tw-etat__montant">' + esc(g.montant) + '</span>' : "";
+
+    /* Preuve la plus parlante : dernière entrée de preuves[] recopiée telle
+       quelle (detail + date brute), même logique que _preuve_citee côté
+       Python mais SANS réinterpréter le type - juste le dernier élément. */
+    var preuves = g.preuves || [];
+    var derniere = preuves.length ? preuves[preuves.length - 1] : null;
+    var preuveHtml = "";
+    if (derniere && derniere.detail) {
+      var d = String(derniere.date || "").slice(0, 10);
+      preuveHtml = '<p class="tw-etat__preuve">[' + esc(derniere.detail) +
+        (d ? " (" + esc(d) + ")" : "") + ']</p>';
+    }
+
+    var quandHtml = ilYA(g.dernier_check || g.date_lancement) ?
+      '<span class="tw-etat__quand">' + esc(ilYA(g.dernier_check || g.date_lancement)) + '</span>' : "";
+
+    return '<article class="tw-etat" data-ramp="' + esc(ramp) + '">' +
+      '<div class="tw-etat__head">' +
+        '<span class="tw-etat__num">' + pad(num) + '</span>' +
+        '<span class="tw-etat__proj">' + esc(nomAffiche) + '</span>' +
+        quandHtml +
+      '</div>' +
+      '<p class="tw-etat__statut"><span aria-hidden="true">' + st.emoji + '</span> <b>' +
+        esc(st.label) + '</b>' + montantHtml + '</p>' +
+      (g.move_title ? '<p class="tw-etat__move">' + esc(g.move_title) + '</p>' : "") +
+      preuveHtml +
+    '</article>';
+  }
+
+  function renderEtatReelSection(suiviData, projetsData) {
+    var section = document.getElementById("etat-reel-section");
+    var list = document.getElementById("etat-reel-list");
+    if (!section || !list) return;
+    /* Fichier absent, vide ou malformé -> section masquée, rien d'inventé
+       (règle dure : go_suivi.json est une donnée privée, jamais gitignorée
+       vers radar.demo.json ni fusionnée avec l'aperçu local). */
+    var gos = (suiviData && Array.isArray(suiviData.go)) ? suiviData.go.slice() : [];
+    if (!gos.length) { section.hidden = true; list.innerHTML = ""; return; }
+
+    // tri : le plus actionnable en tête (même échelle que _ORDRE_ACTION Python),
+    // c'est un tri d'AFFICHAGE sur un champ déjà fourni, pas un calcul d'état.
+    gos.sort(function (a, b) {
+      var oa = (STATUTS[a.statut] || { ordre: 9 }).ordre;
+      var ob = (STATUTS[b.statut] || { ordre: 9 }).ordre;
+      return oa - ob;
+    });
+
+    section.hidden = false;
+    list.innerHTML = gos.map(function (g, i) { return renderEtatReel(g, i + 1, projetsData); }).join("");
   }
 
   function triggerGo(btn) {
@@ -351,12 +502,12 @@
       if (f) {
         f.classList.remove("tw-pipe__line--live");
         f.classList.add("tw-pipe__line--done");
-        f.innerHTML = '<span class="tw-ok" aria-hidden="true">✓</span>Fable - plan prêt';
+        f.innerHTML = '<span class="tw-ok" aria-hidden="true">✓</span>Fable poserait le plan - en vrai : 2 à 8 min';
       }
       var s = card.querySelector("[data-sonnet]");
       if (s) {
         s.classList.add("tw-pipe__line--live");
-        s.innerHTML = '<span class="tw-pipe__dot" aria-hidden="true"></span>Sonnet - exécute l’étape 1 : ' + esc(step1 || "");
+        s.innerHTML = '<span class="tw-pipe__dot" aria-hidden="true"></span>Sonnet exécuterait l’étape 1&nbsp;: ' + esc(step1 || "");
       }
       entry.stage = 2;
       var idx = gos.findIndex(function (g) { return g.id === entry.id; });
@@ -408,6 +559,20 @@
       });
     });
 
+    /* "Copier go N" - le SEUL pont vers le réel (VISION-ACTIVATION §2). */
+    container.querySelectorAll(".tw-copygo").forEach(function (btn) {
+      var timer = null;
+      btn.addEventListener("click", function () {
+        var txt = btn.getAttribute("data-copy") || "";
+        copyText(txt).then(function () {
+          btn.classList.add("is-copied");
+          announce("Copié. Colle-le dans The Wire sur Telegram.");
+          if (timer) clearTimeout(timer);
+          timer = setTimeout(function () { btn.classList.remove("is-copied"); }, 1200);
+        });
+      });
+    });
+
     /* Étapes cochables → barre de progression du move */
     container.querySelectorAll(".tw-step__num").forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -439,6 +604,17 @@
     container.querySelectorAll(".tw-go").forEach(function (btn) {
       btn.addEventListener("click", function () { triggerGo(btn); });
     });
+  }
+
+  /* Chargement indépendant du radar : go_suivi.json est privé (absent en
+     prod publique GitHub Pages), donc jamais bloquant pour le rendu
+     principal. Erreurs avalées par loadOptional - section masquée si rien. */
+  function loadEtatReel() {
+    Promise.all([loadOptional("SUIVI_SOURCES"), loadOptional("PROJETS_SOURCES")])
+      .then(function (res) {
+        renderEtatReelSection(res[0], res[1]);
+      })
+      .catch(function () { renderEtatReelSection(null, null); });
   }
 
   /* ---------- écran ---------- */
@@ -500,6 +676,7 @@
     }
 
     renderGosSection();
+    loadEtatReel();
 
     var skill = document.getElementById("skill");
     if (data.skill_up) {

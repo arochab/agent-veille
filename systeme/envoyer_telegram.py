@@ -10,6 +10,7 @@ Robuste : si pas de radar.json ou radar vide -> message "rien de neuf" (ou silen
 """
 from __future__ import annotations
 import json
+import re
 import sys
 import time
 import urllib.error  # explicite : ne pas dependre de l'import implicite fait par urllib.request
@@ -25,6 +26,16 @@ SIGNAUX = ROOT / "data" / "signaux_frais.json"
 TG_LIMIT = 4096  # limite Telegram par message
 DELAIS_RETRY = (2.0, 5.0)  # backoff des re-essais d'envoi : ~2 s puis ~5 s (2 retries max)
 RETRY_AFTER_PLAFOND = 30.0  # un 429 Telegram peut annoncer retry_after : respecte mais plafonne
+
+# Delai du planificateur Fable, SOURCE UNIQUE = executer_move.PLAN_GO_TIMEOUT_S (le CTA
+# ne doit jamais afficher un chiffre invente/orphelin). Import paresseux tolerant : si
+# executer_move est indisponible (env de test isole, etc.), repli 8 min (valeur actuelle
+# documentee), jamais un crash du radar pour un simple affichage de delai.
+try:
+    sys.path.insert(0, str(HERE))
+    from executer_move import PLAN_GO_TIMEOUT_S as _PLAN_GO_TIMEOUT_S  # type: ignore
+except Exception:
+    _PLAN_GO_TIMEOUT_S = 8 * 60
 
 
 def load_config() -> dict:
@@ -349,6 +360,36 @@ def _detail_move(m: dict) -> list:
     return out
 
 
+# Regex MIROIR d'extractVerdict (pwa/app.js) : premier montant en € trouve
+# n'importe ou dans le titre, suffixe /mois·/an conserve. Anti-invention : pas
+# de € dans le titre -> None, jamais de montant fabrique. Tenue synchro a la
+# main avec la version JS (meme contrat, deux runtimes differents).
+_RE_GAIN = re.compile(
+    r"(?:(?:gagne|gain|rapporte|encaisse)\s+)?~?\s*([\d][\d\s.,]*)\s*€\s*"
+    r"(/\s*(?:mois|an|semaine|jour))?",
+    re.IGNORECASE,
+)
+
+
+def _gain_du_titre(title: str) -> str:
+    """Extrait '~<montant>€<suffixe>' du titre du move star (ex. 'Gagne ~290€ : ...'
+    -> '~290€'). Rend '' si aucun montant en € present (AUCUNE invention) - dans ce
+    cas la ligne CTA ne cite aucun chiffre."""
+    t = str(title or "")
+    m = _RE_GAIN.search(t)
+    if not m:
+        return ""
+    num = re.sub(r"[\s.,](?=\d{3}\b)", "", m.group(1))  # separateurs de milliers
+    num = re.sub(r",00$", "", num)                        # ",00" decoratif
+    num = re.sub(r"[\s.,]+$", "", num).strip()
+    if not num or not re.search(r"\d", num):
+        return ""
+    suffixe = ""
+    if m.group(2):
+        suffixe = "/" + re.sub(r"[\s/]+", "", m.group(2))
+    return f"~{num}€{suffixe}"
+
+
 _MOIS_FR = ["janv.", "févr.", "mars", "avr.", "mai", "juin",
             "juil.", "août", "sept.", "oct.", "nov.", "déc."]
 _JOURS_FR = ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."]
@@ -430,10 +471,19 @@ def format_radar(radar: dict, pwa_url: str = "https://arochab.github.io/agent-ve
 
     # LA CONVERSION (audit GTM) : le geste attendu - répondre « go N » - n'était
     # écrit NULLE PART. Un radar sans call-to-action est une newsletter ; avec,
-    # c'est un bon de commande. Une seule ligne, après les moves, jamais répétée.
+    # c'est un bon de commande. DEUX lignes, après les moves, jamais répétées :
+    # la 1ere est le geste (go N), la 2e nomme le PIPELINE (Fable planifie, Sonnet
+    # execute) et RECOPIE le gain du move star - l'argument de vente etait jusqu'ici
+    # invisible dans le CTA (brief renforcement Activation, 2026-07-06). Le delai
+    # affiche derive de PLAN_GO_TIMEOUT_S (executer_move.py), jamais un chiffre
+    # orphelin recopie a la main.
     L.append("")
     L.append("")
-    L.append("↩️ <b>Réponds « go 1 »</b> (ou 2, 3…) - le plan d'exécution se prépare tout seul.")
+    L.append("↩️ <b>Réponds « go 1 »</b> (ou 2, 3…)")
+    gain = _gain_du_titre(star_move.get("title", ""))
+    delai_min = max(1, round(_PLAN_GO_TIMEOUT_S / 60))
+    vise = f" - vise {gain}" if gain else ""
+    L.append(f"<i>Fable pose le plan (2 à {delai_min} min), Sonnet exécute sous ton contrôle{vise}.</i>")
 
     if radar.get("skill_up"):
         L.append("")

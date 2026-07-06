@@ -587,15 +587,84 @@ button.tw-step__num::after { content: ""; position: absolute; inset: -14px -16px
 }
 
 /* ==========================================================================
-   11. TES GO EN COURS - famille 2/2 du signal. Fil pipeline qui s'imprime
-   ligne par ligne (greffe jury), jauge 4 segments plan·exécution·preuve·tiré,
-   état terminal prouvé.
+   10bis. TES GO - ÉTAT RÉEL - lu de data/go_suivi.json (VISION-ACTIVATION §2).
+   Registre en tons NEUTRES/ramp projet - AUCUN jaune --signal ici : le signal
+   reste réservé à .tw-go et .tw-pipe (unicité de l'accent, §3 DESIGN-SPEC,
+   grep-prouvable : aucun "var(--signal)" dans ce bloc). Chant gauche 3px ramp
+   projet (même identité que les cartes move), sinon registre --line/--text.
+   ========================================================================== */
+.tw-etat-section { border-top: 1px solid var(--line); padding: var(--sp-5) var(--sp-4); }
+.tw-etat-section::before {
+  content: "📡 Tes go - état réel (lu du suivi The Wire)"; display: block;
+  font-size: var(--fs-micro); letter-spacing: var(--ls-micro); text-transform: uppercase;
+  color: var(--text-3); margin-bottom: var(--sp-3); font-weight: 400; /* 6.59:1 vs bg-0 */
+}
+.tw-etat {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--ramp-solid, var(--text-3));
+  padding: var(--sp-3);
+  margin-top: var(--sp-3);
+}
+.tw-etat + .tw-etat { margin-top: var(--sp-3); }
+.tw-etat__head { display: flex; align-items: baseline; gap: var(--sp-2); }
+.tw-etat__num {
+  font-family: var(--font-mono); font-size: 12px; font-weight: 700;
+  color: var(--text-3); /* 6.59:1 vs bg-0 */
+}
+.tw-etat__proj {
+  font-size: var(--fs-micro); letter-spacing: 0.1em; text-transform: uppercase;
+  font-weight: 700;
+  color: var(--ramp-text, var(--text-2)); /* ramps ≥ 9:1 vs bg-1, repli 10.74:1 vs bg-0 */
+}
+.tw-etat__quand { margin-left: auto; font-size: var(--fs-micro); color: var(--text-3); } /* 6.59:1 vs bg-0 */
+.tw-etat__statut {
+  font-size: var(--fs-body); line-height: var(--lh-sub);
+  color: var(--text-1); /* 17.17:1 vs bg-0 */
+  margin: var(--sp-2) 0 0;
+}
+.tw-etat__montant {
+  margin-left: var(--sp-2); font-family: var(--font-mono); font-weight: 700;
+  color: var(--ok); /* 9.49:1 vs bg-0 */
+}
+.tw-etat__move {
+  font-size: var(--fs-caption); line-height: var(--lh-caption);
+  color: var(--text-2); /* 10.74:1 vs bg-0 */
+  margin: 6px 0 0;
+}
+.tw-etat__preuve {
+  font-size: var(--fs-data); font-style: normal;
+  color: var(--text-3); /* 6.59:1 vs bg-0 */
+  margin: var(--sp-2) 0 0; padding-top: var(--sp-2); border-top: 1px solid var(--line);
+}
+
+/* Bouton "Copier go N" - le SEUL pont vers le réel (VISION-ACTIVATION §2).
+   Registre neutre (PAS le jaune --signal : ce n'est pas l'action GO
+   elle-même, c'est un raccourci presse-papiers vers Telegram). */
+.tw-copygo {
+  display: flex; align-items: center; justify-content: center; gap: var(--sp-2);
+  width: 100%; min-height: 44px; margin-top: var(--sp-2);
+  background: var(--bg-2); border: 1px solid var(--line-strong);
+  color: var(--text-1); /* 14.89:1 vs bg-2 */
+  font-family: var(--font-sans); font-size: var(--fs-caption); font-weight: 700;
+  letter-spacing: 0.04em; cursor: pointer;
+  transition: border-color var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+.tw-copygo:active { border-color: var(--text-2); }
+.tw-copygo.is-copied { border-color: var(--ok); color: var(--ok); }
+.tw-copygo.is-copied .tw-copygo__hint::before { content: "✓ "; }
+
+/* ==========================================================================
+   11. APERÇUS LOCAUX - RIEN N'EST PARTI - famille 2/2 du signal. Fil pipeline
+   SIMULÉ qui s'imprime ligne par ligne (greffe jury), toujours au
+   conditionnel, jauge 2 segments plan·exécution (jamais de "preuve"/"tiré" -
+   aucun accompli simulé à l'indicatif, contre-audit 2026-07-06 B2).
    ========================================================================== */
 .tw-gos { border-top: 1px solid var(--line); padding: var(--sp-5) var(--sp-4); }
 .tw-gos::before {
   /* B2 : le titre de section porte lui-même la nature d'aperçu - impossible
-     de confondre ce fil simulé avec l'état réel des go (qui vit sur Telegram). */
-  content: "🔨 Tes go en cours - aperçu local"; display: block;
+     de confondre ce fil simulé avec l'état réel des go (section précédente,
+     lue de data/go_suivi.json). */
+  content: "🔨 Aperçus locaux - rien n'est parti"; display: block;
   font-size: var(--fs-micro); letter-spacing: var(--ls-micro); text-transform: uppercase;
   color: var(--text-3); margin-bottom: 0; font-weight: 400;
 }
@@ -615,7 +684,8 @@ button.tw-step__num::after { content: ""; position: absolute; inset: -14px -16px
 }
 .tw-pipe__t { margin-left: auto; font-size: var(--fs-micro); color: var(--text-3); } /* 6.59:1 vs bg-0 */
 
-/* Jauge 4 segments : plan · exécution · preuve · tiré (greffe jury). */
+/* Jauge 2 segments : plan · exécution (greffe jury, réduite - jamais de
+   "preuve"/"tiré" simulés, contre-audit 2026-07-06 B2). */
 .tw-pipe__gauge {
   display: flex; gap: 2px; padding: var(--sp-2) var(--sp-3) 0; list-style: none;
 }
@@ -640,9 +710,11 @@ button.tw-step__num::after { content: ""; position: absolute; inset: -14px -16px
   background: var(--signal); /* 12.57:1 vs bg-0, UI >= 3:1 */
   transform: translateY(-1px); border-radius: 0;
 }
-/* Ligne de preuve : l'issue prouvée ferme la boucle. */
+/* Note d'écart de rythme (2 s simulées vs 2-8 min réelles) : ton NEUTRE,
+   surtout pas --ok (vert de succès) - ce n'est pas un accompli, juste un
+   fait annoncé (contre-audit 2026-07-06 B2 : aucun succès simulé). */
 .tw-pipe__proof {
-  font-size: var(--fs-data); color: var(--ok); font-weight: 700;
+  font-size: var(--fs-data); color: var(--text-3); font-weight: 400; /* 6.59:1 vs bg-0 */
   padding: 6px var(--sp-3) var(--sp-3); border-top: 1px solid var(--line); margin-top: var(--sp-1);
 }
 /* Impression du fil : chaque ligne de statut, 320ms. */

@@ -174,6 +174,66 @@ def _couper_mot(texte: str, max_len: int = 200) -> str:
     return coupe.rstrip(" ,;:-") + "…"
 
 
+def _jours_go_vers_preuve(g: dict, statut_cible: str) -> float:
+    """Jours ENTRE le lancement du go (date_lancement) et la preuve qui a fait
+    passer son statut a statut_cible ('fait' ou 'paye'). None si le go n'est pas
+    (ou plus) a ce statut, ou si une des deux dates est illisible.
+
+    FACTUEL, ZERO inference : la date d'arrivee est preuves[-1]['date'] - dans
+    suivi_go.py::_decider, exactement UNE branche elif ajoute une preuve avant de
+    fixer le statut courant, donc la DERNIERE preuve de la liste est TOUJOURS
+    celle qui a produit ce statut precis (confirmation Adam, event feedback, ou
+    commit matche). Rien n'est devine : si preuves[] est vide/illisible -> None,
+    jamais une duree inventee."""
+    if g.get("statut") != statut_cible:
+        return None
+    d0 = _parse_date(g.get("date_lancement"))
+    preuves = g.get("preuves") or []
+    if not d0 or not preuves:
+        return None
+    d1 = _parse_date(preuves[-1].get("date"))
+    if not d1:
+        return None
+    delta = (d1 - d0).total_seconds() / 86400.0
+    return delta if delta >= 0 else None
+
+
+def _mediane(valeurs: list) -> float:
+    """Mediane simple, stdlib pure (pas de dependance a statistics.median pour
+    rester coherent avec le reste du fichier). [] -> None."""
+    if not valeurs:
+        return None
+    v = sorted(valeurs)
+    n = len(v)
+    mid = n // 2
+    if n % 2 == 1:
+        return v[mid]
+    return (v[mid - 1] + v[mid]) / 2.0
+
+
+def calculer_time_to_cash() -> dict:
+    """Time-to-cash REEL (mission post-go) : jours MEDIANS go -> fait et go -> paye,
+    calcules sur TOUT go_suivi.json (pas seulement la fenetre 7 jours du digest
+    hebdo) - un go lance il y a 10 jours et paye hier doit compter, sinon la
+    fenetre courte biaiserait vers les conversions rapides et mentirait sur le
+    delai reel. AUCUNE inference d'argent : ce module ne compte que des DATES deja
+    prouvees ailleurs (go_horodatage via date_lancement, confirmations/events via
+    preuves[-1]['date'], memes sources que suivi_go.py). {} si aucun go 'fait' et
+    aucun go 'paye' n'a de duree calculable (pas encore assez de recul)."""
+    snap = _load(GO_SUIVI, {"go": []})
+    tous = snap.get("go", [])
+    delais_fait = [d for g in tous
+                   for d in [_jours_go_vers_preuve(g, "fait")] if d is not None]
+    delais_paye = [d for g in tous
+                   for d in [_jours_go_vers_preuve(g, "paye")] if d is not None]
+    return {
+        "n_fait": len(delais_fait),
+        "mediane_jours_fait": _mediane(delais_fait),
+        "n_paye": len(delais_paye),
+        "mediane_jours_paye": _mediane(delais_paye),
+    }
+
+
 def calculer_digest(jours: int = JOURS_FENETRE) -> dict:
     """Compte les go des `jours` derniers jours, par statut. Renvoie un dict
     factuel : rien n'est devine, tout vient de go_suivi.json (lui-meme derive
@@ -252,6 +312,9 @@ def calculer_digest(jours: int = JOURS_FENETRE) -> dict:
         "dormants_detail": dormants_detail,
         "plus_avance": plus_avance,
         "potentiel_estime_euros": potentiel_estime,
+        # time-to-cash (mission post-go) : calcule sur TOUT go_suivi.json, pas la
+        # fenetre - voir calculer_time_to_cash() pour le detail anti-biais.
+        "time_to_cash": calculer_time_to_cash(),
     }
 
 
@@ -363,6 +426,20 @@ def formater_digest(jours: int = JOURS_FENETRE) -> str:
     if d["potentiel_estime_euros"] > 0:
         L.append("")
         L.append(f"<i>Potentiel estimé (non confirmé) sur les moves en cours : ~{d['potentiel_estime_euros']:.0f}€</i>")
+
+    # TIME-TO-CASH REEL (mission post-go) : jours MEDIANS go -> fait et go -> paye,
+    # calcules sur des dates prouvees (go_horodatage + confirmations/events), jamais
+    # une inference d'argent. N'affiche une ligne QUE si au moins une des deux durees
+    # est calculable (sinon rien - pas de "0j" trompeur faute de recul).
+    ttc = d.get("time_to_cash") or {}
+    morceaux_ttc = []
+    if ttc.get("mediane_jours_fait") is not None:
+        morceaux_ttc.append(f"go → fait : {ttc['mediane_jours_fait']:.1f}j (médiane, n={ttc['n_fait']})")
+    if ttc.get("mediane_jours_paye") is not None:
+        morceaux_ttc.append(f"go → payé : {ttc['mediane_jours_paye']:.1f}j (médiane, n={ttc['n_paye']})")
+    if morceaux_ttc:
+        L.append("")
+        L.append(f"⏱ <b>Time-to-cash</b> - {' · '.join(morceaux_ttc)}")
 
     L.append("")
     if d["nb_paye"] == 0:

@@ -682,6 +682,32 @@ RE_SKIP = re.compile(r"^skip\s*([1-9])$", re.IGNORECASE)
 RE_PAYE = re.compile(r"^pay[ée]?\s*([1-9])\s*(.*)$", re.IGNORECASE)
 
 
+def _gain_du_titre(title: str) -> str:
+    """Recopie du gain vise (ex. '~290€') depuis le titre du move, pour le contrat
+    cash (accuse de reception + message final). Import PARESSEUX de envoyer_telegram
+    (evite tout cycle d'import au niveau module, ce dernier important en retour
+    executer_move.PLAN_GO_TIMEOUT_S) ; repli '' si indisponible - jamais d'invention,
+    jamais de crash du go pour un simple affichage."""
+    try:
+        import envoyer_telegram as _et  # type: ignore
+        return _et._gain_du_titre(title)
+    except Exception:
+        return ""
+
+
+def _do_now_tronque(do_now: str, limite: int = 140) -> str:
+    """Tronque do_now a ~140 caracteres pour le message final (repris tel quel, sans
+    doubler l'information deja donnee dans le radar). Coupe sur un espace pour ne
+    jamais trancher un mot en deux ; ajoute '...' si tronque (jamais de tiret unicode)."""
+    s = str(do_now or "").strip()
+    if len(s) <= limite:
+        return s
+    coupe = s.rfind(" ", 0, limite)
+    if coupe <= 0:
+        coupe = limite
+    return s[:coupe].rstrip() + "..."
+
+
 def traiter_go(token: str, chat: str, n: int) -> None:
     """Coeur : retrouve le move #n, resout le dossier, lance Claude, previent Adam.
     Chaque garde-fou repond a Adam et ne lance RIEN si ca coince."""
@@ -725,6 +751,23 @@ def traiter_go(token: str, chat: str, n: int) -> None:
         log(f"go {n} : resolution KO : {err}")
         return
 
+    # ACCUSE DE RECEPTION IMMEDIAT (zero silence) : lancer_planificateur_fable est
+    # SYNCHRONE et peut prendre jusqu'a PLAN_GO_TIMEOUT_S (8 min par defaut) - sans ce
+    # message, Adam tape "go N" et n'a AUCUN signe de vie pendant tout ce temps, a
+    # l'instant precis ou son engagement est maximal (brief renforcement Activation,
+    # 2026-07-06). Ce message verrouille le move (numero + projet + titre), recopie
+    # le gain vise et annonce le delai reel avant que Fable ne soit meme appele.
+    gain = _gain_du_titre(move.get("title", ""))
+    delai_min = max(1, round(PLAN_GO_TIMEOUT_S / 60))
+    vise = f" Vise {gain}." if gain else ""
+    projet_acc = move.get("projet", "?")
+    titre_acc = move.get("title", "")
+    tg_send(token, chat,
+            f"Recu : move #{n} ({projet_acc}) - {titre_acc}.{vise} "
+            f"Fable planifie maintenant (jusqu'a {delai_min} min) - je te reponds "
+            "des que le plan est pose.")
+    log(f"go {n} : accuse de reception envoye (gain={gain!r}, delai={delai_min}min).")
+
     # ETAPE 1 (deux cerveaux) : le planificateur Fable ecrit PLAN-GO.md dans le
     # dossier projet AVANT toute session interactive. Echec -> repli sans casser
     # le go (comportement actuel = session directe avec le move brut).
@@ -758,6 +801,17 @@ def traiter_go(token: str, chat: str, n: int) -> None:
         return
 
     projet = move.get("projet", "?")
+    # RE-ANCRAGE CASH (message final) : gain recopie + do_now (le premier euro,
+    # tronque ~140) + cloture (commandes fait/paye) - au moment ou Adam est le plus
+    # engage (le plan vient de tomber), on lui redonne en 3 lignes ce qu'il vise, quoi
+    # faire en premier, et comment cloturer. Meme texte ajoute aux DEUX branches -
+    # seule la partie "plan Fable pose / repli direct" reste distincte (jury produit).
+    gain = _gain_du_titre(move.get("title", ""))
+    gain_ligne = f" Vise {gain}." if gain else ""
+    do_now = _do_now_tronque(move.get("do_now", ""))
+    premier_euro = f"\nPremier euro : {do_now}" if do_now else ""
+    cloture = (f"\nQuand c'est shippe : \"fait {n}\". "
+               f"Quand l'euro tombe : \"paye {n} <montant>\".")
     # Message honnete dans les DEUX cas : quand plan_go_ok, PLAN-GO.md est deja
     # ecrit a cet instant (etape 1, avant ce message) -> ne jamais dire "il n'ecrit
     # rien avant ton OK" dans ce cas, ce serait faux (jury produit, corrige).
@@ -767,14 +821,14 @@ def traiter_go(token: str, chat: str, n: int) -> None:
         # executer_move.py:11), il PROPOSE de suivre le plan Fable et ATTEND ton OK,
         # exactement comme sans plan Fable. Seule la difference reelle : le plan
         # est deja pret (pas a inventer par Sonnet), pas le fait qu'il agisse seul.
-        msg = (f"Je lance Claude Code sur {projet} pour le move #{n}. "
+        msg = (f"Je lance Claude Code sur {projet} pour le move #{n}.{gain_ligne} "
                "Fable a deja depose un plan detaille (PLAN-GO.md) dans le dossier "
                "- rien d'autre n'est ecrit. Sonnet te le propose et attend ton OK "
-               "avant d'agir.")
+               f"avant d'agir.{premier_euro}{cloture}")
     else:
-        msg = (f"Je lance Claude Code sur {projet} pour le move #{n}. "
+        msg = (f"Je lance Claude Code sur {projet} pour le move #{n}.{gain_ligne} "
                "Plan Fable indisponible : il va lire le projet et te proposer un "
-               "plan direct - il n'ecrit rien avant ton OK.")
+               f"plan direct - il n'ecrit rien avant ton OK.{premier_euro}{cloture}")
     tg_send(token, chat, msg)
     log(f"go {n} : Claude ouvert sur '{projet}' ({projet_dir}) [cle={cle}] [plan_go={plan_go_ok}].")
 

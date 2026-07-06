@@ -3,7 +3,7 @@
    radar est donc toujours frais ; hors-ligne UNIQUEMENT, on ressert la dernière
    version en cache (mieux qu'un écran cassé — la date affichée dit son âge).
    Purge tout cache != version courante à l'activation. Calqué sur Claude Eats Tokens. */
-const CACHE = "veille-v5"; // v5 : em dash (—) remplaces par tirets simples dans le contenu affiche (anti-effet IA)
+const CACHE = "veille-v6"; // v6 : go_suivi.json/projets.json passent en network-first (etat reel des go)
 const ASSETS = [
   "./", "./index.html",
   "./pwa/app.js", "./pwa/config.js", "./pwa/design-system.css",
@@ -27,7 +27,9 @@ self.addEventListener("activate", (e) => {
 });
 
 function isData(url) {
-  return /data\/radar.*\.json/.test(url);
+  // radar*.json (le fil) + go_suivi.json/projets.json (état réel des go,
+  // VISION-ACTIVATION §2) : même politique network-first partout sous data/.
+  return /data\/(radar.*|go_suivi|projets)\.json/.test(url);
 }
 
 self.addEventListener("fetch", (e) => {

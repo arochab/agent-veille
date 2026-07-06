@@ -48,9 +48,18 @@
     </div>
   </main>
 
-  <!-- Tes go en cours : pipeline local (voir pwa/app.js). Rien n'est envoyé
-       au poller réel - c'est un miroir visuel du rituel Telegram, en localStorage. -->
-  <section class="tw-gos" id="gos-section" hidden aria-label="Tes go en cours">
+  <!-- Tes go - état réel : lecture SEULE de data/go_suivi.json (same-origin,
+       comme data/radar.json). Champs recopiés, zéro calcul d'état côté front.
+       Masquée si le fichier est absent (donnée privée, GitHub Pages public). -->
+  <section class="tw-etat-section" id="etat-reel-section" hidden aria-label="Tes go - état réel">
+    <div id="etat-reel-list"></div>
+  </section>
+
+  <!-- Aperçus locaux - rien n'est parti : pipeline SIMULÉ (voir pwa/app.js),
+       toujours au conditionnel. Rien n'est envoyé au poller réel - miroir
+       visuel local du rituel Telegram, persisté en localStorage. Jamais
+       fusionné avec la section d'état réel ci-dessus. -->
+  <section class="tw-gos" id="gos-section" hidden aria-label="Aperçus locaux - rien n'est parti">
     <div id="gos-list"></div>
   </section>
 

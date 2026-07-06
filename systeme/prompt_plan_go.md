@@ -46,8 +46,20 @@ implique concrètement pour CE projet dans SON état actuel.>
 
 ## CHEMIN CASH LE PLUS COURT
 <le premier euro : l'action la plus courte qui rapproche d'un paiement réel.
-Si le move n'a pas de chemin cash direct, dis "pas de cash direct : ..." plutôt
-que d'en inventer un.>
+Le montant cité vient TOUJOURS soit du move (repris tel quel), soit préfixé
+"Pari : " si c'est ton estimation - jamais un chiffre inventé sans préfixe.
+Donne aussi un horizon date réaliste ("aujourd'hui" ou "cette semaine" - pas
+une date lointaine qui dilue l'urgence). Si le move n'a pas de chemin cash
+direct, dis "pas de cash direct : ..." plutôt que d'en inventer un.>
+
+## PREMIER GESTE (15 min max)
+<LA toute première action à faire, littéralement dès qu'Adam valide ce plan -
+pas une étape du plan d'étapes ci-dessous (qui vient après), le geste qui
+DÉMARRE tout, faisable en moins de 15 minutes. Sois concret jusqu'au texte :
+si ça s'écrit ou se colle quelque part (message, commentaire, description,
+commit), donne le texte prêt-à-coller entre guillemets. Si l'étape est
+purement technique (fichier à ouvrir, commande à lancer), donne le chemin ou
+la commande exacte. Une seule action, pas une liste.>
 
 ## ANGLE SCALE
 <si ça marche une fois, qu'est-ce qui se répète/s'automatise ? Un gain qui ne se
@@ -63,6 +75,17 @@ vague.>
 
 1. **<quoi>** - comment : <précis>. Done quand : <critère vérifiable>.
 2. ...
+
+## PREUVE ATTENDUE
+<pour CHAQUE étape numérotée du PLAN D'ÉTAPES ci-dessus, une ligne qui annonce
+la preuve concrète qui prouvera qu'elle est faite - le même langage que le
+digest de fin de session (séparateur " :: ", ex "fichier posts/x.md", "commit
+<message attendu>", ou "action externe" si non vérifiable par fichier). Une
+ligne par étape, même numérotation, pour que le suivi puisse comparer l'annoncé
+à l'obtenu. Format EXACT :
+- [step 1] <preuve attendue>
+- [step 2] <preuve attendue>
+...>
 
 ## NE PAS FAIRE (anti-dérive)
 <ce qui serait hors-sujet, prématuré, ou risqué dans ce move précis - pour que
