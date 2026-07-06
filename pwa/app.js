@@ -193,7 +193,7 @@
     if (verdict) {
       verdictHtml =
         '<div class="tw-verdict">' +
-          '<p class="tw-verdict__kicker">Gagne · EUR</p>' +
+          '<p class="tw-verdict__kicker">💶 Gagne · EUR</p>' +
           '<p class="tw-verdict__row">' +
             '<span class="tw-verdict__approx" aria-hidden="true">~</span>' +
             '<span class="tw-verdict__num">' + esc(verdict.num) + '</span>' +
@@ -209,7 +209,7 @@
        Rendu en fenêtre LCD inversée (signature n°3 du Calibre). */
     if (m.insight) body += '<p class="tw-insight">' + esc(String(m.insight).slice(0, 160)) + '</p>';
     if (m.do_now) {
-      body += '<div class="tw-donow"><span class="tw-donow__label">Maintenant — le premier euro</span>' +
+      body += '<div class="tw-donow"><span class="tw-donow__label">👉 Maintenant — le premier euro</span>' +
               '<div>' + esc(m.do_now) + '</div></div>';
     }
     /* Le GO — collé immédiatement après le premier geste (do_now), dans TOUTES
@@ -237,8 +237,8 @@
         return renderStep(s, i, i === steps.length - 1, doneList.indexOf(i) !== -1);
       }).join("") + '</div>';
     }
-    if (m.ensuite) body += '<div class="tw-ensuite"><b>Ensuite</b>' + esc(m.ensuite) + '</div>';
-    if (m.aussi_pour) body += '<div class="tw-aussi"><b>Aussi pour</b>' + esc(m.aussi_pour) + '</div>';
+    if (m.ensuite) body += '<div class="tw-ensuite"><b>➡️ Ensuite</b>' + esc(m.ensuite) + '</div>';
+    if (m.aussi_pour) body += '<div class="tw-aussi"><b>♻️ Aussi pour</b>' + esc(m.aussi_pour) + '</div>';
 
     /* Pour la star : verdict + do_now + GO doivent tenir sans scroll (tier 1).
        Le "pourquoi maintenant"/insight/steps suivent en tier 2/3, donc l'ordre
@@ -464,8 +464,8 @@
     var st = data.stats || {};
     var moveCount = (data.moves || []).length;
     var bits = [];
-    if (st.fresh != null) bits.push('<li class="tw-cell"><span class="tw-cell__k">Signaux</span><span class="tw-cell__v">' + esc(st.fresh) + '</span></li>');
-    if (st.cut != null) bits.push('<li class="tw-cell"><span class="tw-cell__k">Coupés</span><span class="tw-cell__v">' + esc(st.cut) + '</span></li>');
+    if (st.fresh != null) bits.push('<li class="tw-cell"><span class="tw-cell__k">📶 Signaux</span><span class="tw-cell__v">' + esc(st.fresh) + '</span></li>');
+    if (st.cut != null) bits.push('<li class="tw-cell"><span class="tw-cell__k">✂️ Coupés</span><span class="tw-cell__v">' + esc(st.cut) + '</span></li>');
     bits.push('<li class="tw-cell"><span class="tw-cell__k">Moves</span><span class="tw-cell__v">' + esc(moveCount) + '</span></li>');
     if (isDemo) bits.push('<li class="tw-cell"><span class="tw-badge-demo">Démo</span></li>');
     var statsEl = document.getElementById("stats");

@@ -91,12 +91,21 @@ déclenche — jauge et carré d'exécution). Grep-prouvable : `grep -n "var(--s
 pwa/design-system.css` ne doit jamais faire remonter un sélecteur en dehors de ces deux
 familles.
 
-Les 6 couleurs ramp (`blue, teal, purple, coral, amber, gray`) restent posées via
-`data-ramp="…"` sur `.tw-move`, mais sont **neutralisées visuellement** : elles ne
-colorent plus que le texte du chip projet (mono, discret), jamais un fond, une bordure
-de carte ou une barre de progression. `gray` reste le repli si la ramp est inconnue.
-Tous les couples texte/fond sont recalculés ≥ 9:1 vs bg-1 (largement au-dessus du
-plancher AA), voir tableau de constantes en tête de `pwa/design-system.css` §1.
+Les 6 couleurs ramp (`blue, teal, purple, coral, amber, gray`) sont **RÉACTIVÉES en
+identité projet** (retour client 2026-07-06 : « utilise un peu plus de couleurs, ça
+pourrait vraiment m'aider ») : chant gauche 3px de chaque carte (`border-left`
+ramp-solid), chip projet en fond+filet+texte ramp, jauge d'avancement ramp-solid.
+La règle de l'accent d'ACTION reste intacte : le jaune `--signal` n'a toujours qu'un
+métier (GO + pipeline) — les ramps disent « quel projet », le jaune dit « agis ».
+`gray` reste le repli si la ramp est inconnue. Tous les couples texte/fond sont
+recalculés ≥ 9:1 vs bg-1, les solids ≥ 7.13:1 (voir `pwa/design-system.css` §1).
+
+**Lexique émoji (même voix que les messages Telegram — 1 émoji = 1 sens)** :
+📡 le fil/hook · ⭐️ priorité (star) · 💶 verdict/gain · 🧭 pourquoi maintenant ·
+💡 insight · 👉 do now (premier euro) · 🛠️ plan d'exécution · ➡️ ensuite ·
+♻️ aussi pour · 🎓 skill up · 🔨 go en cours · 📶 signaux · ✂️ coupés.
+Jamais décoratifs : chaque émoji matérialise UNE section, toujours la même
+(retour client 2026-07-06 : « matérialiser visuellement le fond »).
 
 ## 4. États
 
