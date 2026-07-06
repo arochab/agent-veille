@@ -1052,26 +1052,36 @@ def main() -> int:
         except Exception as e:
             log("hub_actions indisponible (hub desactive): " + repr(e))
             traiter_actions_hub = None
+
+        # mid_move : MEME calcul d'id qu'a la ligne de traiter_go (move._id sinon
+        # 'projet-title' normalise) -> un go clique dans la PWA a exactement la
+        # meme identite qu'un go tape sur Telegram.
+        def mid_move(m):
+            return m.get("_id") or f"{_norm(m.get('projet',''))}-{_norm(m.get('title',''))}"
+
         while True:
+            # INDEPENDANCE DES DEUX VOIES (double run) : un plantage de Telegram
+            # (reseau KO durable, getaddrinfo failed...) ne doit JAMAIS empecher ni
+            # ralentir la voie hub, et inversement. Chacune dans son propre try, et
+            # le backoff d'erreur Telegram ne penalise PAS la reactivite du hub.
+            tg_ko = False
             try:
                 un_passage(token, chat)
             except KeyboardInterrupt:
                 raise
             except Exception as e:
-                log("boucle : erreur non fatale : " + repr(e))
-                time.sleep(5)  # backoff court, on ne tue pas le poller
+                log("boucle telegram : erreur non fatale : " + repr(e))
+                tg_ko = True
             if traiter_actions_hub is not None:
                 try:
-                    # mid_move : MEME calcul d'id qu'a la ligne de traiter_go
-                    # (move._id sinon 'projet-title' normalise) -> un go clique dans
-                    # la PWA a exactement la meme identite qu'un go tape sur Telegram.
-                    def mid_move(m):
-                        return m.get("_id") or f"{_norm(m.get('projet',''))}-{_norm(m.get('title',''))}"
                     traiter_actions_hub(token, chat, traiter_go,
                                         dernier_radar, moves_ordonnes, radar_date, mid_move)
                 except Exception as e:
                     log("boucle hub : erreur non fatale : " + repr(e))
-            time.sleep(WATCH_SLEEP)
+            # Cadence : normale si tout va bien ; on ne s'endort PAS 5 s de plus
+            # apres une erreur Telegram, sinon le hub reagirait avec ce retard a
+            # chaque tour d'un reseau durablement KO. Un petit backoff sinon.
+            time.sleep(max(WATCH_SLEEP, 5) if tg_ko else WATCH_SLEEP)
     except KeyboardInterrupt:
         log("Arret demande (Ctrl+C).")
         return 0

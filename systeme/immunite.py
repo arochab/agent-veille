@@ -51,7 +51,7 @@ ATTENDUS = {
 # Une alteration ici ne coupe RIEN : elle est remontee dans 'alteres_sentinelle'
 # (verifier) et affichee en avertissement (main). Re-signature : --signer.
 SENTINELLES = {
-    "executer_move.py": "efedef8707c09fa35339ea27d4ff4de7db745e6d817a7e168a9126708b8f46ae",
+    "executer_move.py": "67efb654912c08e33f2b25e6f5420516a56916069b0d3a06be62904c6d8f472d",
     "envoyer_telegram.py": "ff1798bd531de2e22db3f5532bc7308f27d52371c724c954203c75847578e1ec",
     "collecte_signaux.py": "23aa79b05c1be28e921aa3dd2defbcbb95cfb93d3b8c1ecbf3601dd072693ea0",
     "suivi_go.py": "04732bb6c74ce76a6e103726a761e7de7ae91c7975f8ad141da1e28f2f63dcc3",
