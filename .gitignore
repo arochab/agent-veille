@@ -5,9 +5,10 @@ briefs/
 # EXCEPTION : la coquille PWA publique a besoin de la démo (zéro donnée réelle).
 # Le vrai radar (data/radar.json) reste bloqué par 'data/*' ci-dessus.
 !data/radar.demo.json
-# EXCEPTION (contre-audit Fable E4) : la config de référence des projets doit être
-# versionnée — c'est la source unique de vérité, sans secret ni signal dedans.
-!data/projets.json
+# data/projets.json N'EST PLUS versionné (décision Adam 2026-07-06, avant le
+# 1er push public) : il liste tous les projets d'Adam et leur priorité stratégique
+# (tiers) - carte de bataille, jamais sur un repo public. Il reste sur le disque,
+# le système le lit normalement ; sauvegarde locale = data/projets.json.backup-local.
 # Garde-fou explicite : ne JAMAIS suivre le vrai radar (stratégie) ni l'atelier.
 data/radar.json
 data/atelier.json
