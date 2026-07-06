@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-envoyer_telegram.py — Pousse le radar du jour sur Telegram (bot The Wire).
+envoyer_telegram.py - Pousse le radar du jour sur Telegram (bot The Wire).
 
 Lit le token + chat_id depuis config.local.json (LOCAL, jamais sur GitHub),
 formate le radar (data/radar.json) en message lisible, et l'envoie.
@@ -29,7 +29,7 @@ RETRY_AFTER_PLAFOND = 30.0  # un 429 Telegram peut annoncer retry_after : respec
 
 def load_config() -> dict:
     if not CONFIG.exists():
-        print("config.local.json absent — pas de Telegram configuré.")
+        print("config.local.json absent - pas de Telegram configuré.")
         sys.exit(0)
     return json.loads(CONFIG.read_text(encoding="utf-8"))
 
@@ -68,7 +68,7 @@ BALISES_TG = {"b", "strong", "i", "em", "u", "ins", "s", "strike", "del",
 
 def _balises_ouvertes(s: str) -> list:
     """Scanne le HTML et rend la pile des balises encore OUVERTES a la fin, sous
-    forme (nom, texte_ouvrant_complet) — ex. ('blockquote', '<blockquote expandable>').
+    forme (nom, texte_ouvrant_complet) - ex. ('blockquote', '<blockquote expandable>').
     POURQUOI : Telegram rejette tout chunk aux balises non appariees ('can't find
     end tag') et TOUT l'envoi echoue ; pour decouper sans casser, il faut savoir
     exactement quoi fermer en fin de chunk et quoi rouvrir au debut du suivant."""
@@ -206,26 +206,26 @@ def _appel_api(req: urllib.request.Request) -> dict | None:
     return None
 
 
-# Pastille colorée par projet (repère visuel rapide) — même 6 couleurs ramp que la PWA
+# Pastille colorée par projet (repère visuel rapide) - même 6 couleurs ramp que la PWA
 # (DESIGN-SPEC.md §3) : l'identité du projet, jamais décorative.
 DOT = {"blue": "🔵", "teal": "🟢", "purple": "🟣", "coral": "🟠", "amber": "🟡", "gray": "⚪"}
 
-# LEXIQUE FIXE — la seule palette dont on dispose en Telegram (HTML pauvre, pas de
+# LEXIQUE FIXE - la seule palette dont on dispose en Telegram (HTML pauvre, pas de
 # couleur ni de taille) est la hiérarchie typographique + un jeu d'emojis-signal
 # CONSTANT. Chaque emoji ne veut dire qu'UNE chose, toujours la même, jamais posé
 # pour décorer. Registre complet (pour ne pas en introduire un nouveau par accident) :
 #   📡 hook du jour (headline)   ⭐️ move du jour (star)      💡 insight (lecture stratégique)
 #   👉 do now (action immédiate) ⏱ meta (effort/gain, sur le PLI)  ➡️ ensuite (prochaine étape)
 #   ♻️ aussi pour (transfert)    🎓 skill up de la semaine   📲 lien vers la PWA
-#   ☕️ jour calme                ↩️ répondre (go N / fait N — le CTA)
+#   ☕️ jour calme                ↩️ répondre (go N / fait N - le CTA)
 # (le ✓ a été retiré : il se lisait "déjà fait" alors qu'il marquait le critère
-#  de done — remplacé par "Fini quand :" en toutes lettres.)
+#  de done - remplacé par "Fini quand :" en toutes lettres.)
 DOT_SANS_RAMP = "⚪"
 
 
 def send(token: str, chat: str, html: str) -> bool:
     """Envoie en HTML riche. Si > limite, découpe sur les FRONTIERES DE BLOCS
-    (fin de move), JAMAIS au milieu d'une balise — sinon Telegram refuse
+    (fin de move), JAMAIS au milieu d'une balise - sinon Telegram refuse
     ('can't find end tag'). Deux filets par-dessus : _equilibrer_balises referme et
     rouvre toute balise a cheval sur une frontiere, et _refendre_si_trop_long
     garantit qu'aucun morceau ne depasse jamais 4096, meme si un seul bloc est
@@ -326,7 +326,7 @@ def _detail_move(m: dict) -> list:
         out.append("<b>👉 Fais ça maintenant :</b>")
         out.append(esc(m["do_now"]))
         out.append("")
-    # Plan complet (secondaire) — chaque texte-a-coller en <pre> (copie propre mobile)
+    # Plan complet (secondaire) - chaque texte-a-coller en <pre> (copie propre mobile)
     steps = m.get("steps", [])
     if steps:
         out.append("<b>Le plan complet :</b>")
@@ -337,7 +337,7 @@ def _detail_move(m: dict) -> list:
             if s.get("paste"):
                 out.append(f"<pre>{esc(s['paste'])}</pre>")
             if s.get("done"):
-                # "Fini quand :" explicite — l'ancien "✓ ..." se lisait comme une
+                # "Fini quand :" explicite - l'ancien "✓ ..." se lisait comme une
                 # étape DÉJÀ faite (le ✓ signale l'accompli partout ailleurs),
                 # alors que c'est le CRITÈRE de done (audit GTM, point 5).
                 out.append(f"<i>Fini quand : {esc(s['done'])}</i>")
@@ -387,10 +387,10 @@ def format_radar(radar: dict, pwa_url: str = "https://arochab.github.io/agent-ve
             L.append(suivi)
         L.append("")
         L.append("")
-        L.append("<i>— The Wire</i>")
+        L.append("<i>- The Wire</i>")
         return "\n".join(L)
     # LE HOOK D'ABORD (audit GTM) : la preview de notification Telegram ne montre
-    # que les ~50 premiers caractères — les dépenser sur "THE WIRE · date" (que
+    # que les ~50 premiers caractères - les dépenser sur "THE WIRE · date" (que
     # Telegram affiche DÉJÀ : nom du bot + heure) gaspillait l'accroche du jour.
     # La headline ouvre le message ; la marque passe en 2e ligne discrète.
     if radar.get("headline"):
@@ -407,7 +407,7 @@ def format_radar(radar: dict, pwa_url: str = "https://arochab.github.io/agent-ve
         dot = DOT.get(m.get("ramp", "gray"), DOT_SANS_RAMP)
         star = "⭐️ " if m.get("rank") == "star" else ""
         # Rang numéroté sur les moves 2..n (le star porte déjà ⭐️, pas besoin d'un
-        # numéro en plus) : au coup d'oeil, "tu es sur le move 2 sur 3" — même repère
+        # numéro en plus) : au coup d'oeil, "tu es sur le move 2 sur 3" - même repère
         # que le rail numéroté de la PWA (DESIGN-SPEC.md §2, "Moves 2..n"). Rang et
         # titre dans le MÊME <b> : deux balises grasses collées casseraient la lecture.
         rang = "" if star else f"{esc(m.get('rank',''))}. "
@@ -415,7 +415,7 @@ def format_radar(radar: dict, pwa_url: str = "https://arochab.github.io/agent-ve
         L.append("")   # gros espace entre les moves (style B)
         # LE PLI : titre ultra-direct (suffit à décider) + qualification VISIBLE
         # avant le tap (audit GTM) : l'effort/gain (⏱ meta) décide "je déplie ou
-        # pas" — le cacher dans le déplié forçait un tap à l'aveugle.
+        # pas" - le cacher dans le déplié forçait un tap à l'aveugle.
         L.append(f"{dot} {star}<b>{rang}{esc(m.get('title',''))}</b>")
         sous = esc(m.get("projet", ""))
         if m.get("meta"):
@@ -428,12 +428,12 @@ def format_radar(radar: dict, pwa_url: str = "https://arochab.github.io/agent-ve
             body = "\n".join(x for x in detail).strip()
             L.append(f"<blockquote expandable>{body}</blockquote>")
 
-    # LA CONVERSION (audit GTM) : le geste attendu — répondre « go N » — n'était
+    # LA CONVERSION (audit GTM) : le geste attendu - répondre « go N » - n'était
     # écrit NULLE PART. Un radar sans call-to-action est une newsletter ; avec,
     # c'est un bon de commande. Une seule ligne, après les moves, jamais répétée.
     L.append("")
     L.append("")
-    L.append("↩️ <b>Réponds « go 1 »</b> (ou 2, 3…) — le plan d'exécution se prépare tout seul.")
+    L.append("↩️ <b>Réponds « go 1 »</b> (ou 2, 3…) - le plan d'exécution se prépare tout seul.")
 
     if radar.get("skill_up"):
         L.append("")
@@ -447,12 +447,12 @@ def format_radar(radar: dict, pwa_url: str = "https://arochab.github.io/agent-ve
         L.append(suivi)
 
     # Libellé honnête (audit GTM) : la page publique n'affiche que la DÉMO tant
-    # que le vrai radar n'est pas publié (données privées, choix assumé) —
+    # que le vrai radar n'est pas publié (données privées, choix assumé) -
     # « Radar complet » promettait plus que la page ne donne.
     L.append("")
     L.append("")
     L.append(f'📲 <a href="{pwa_url}">L\'app The Wire</a>')
-    L.append("<i>— The Wire</i>")
+    L.append("<i>- The Wire</i>")
     return "\n".join(L)
 
 
@@ -479,7 +479,7 @@ def format_analyse_morte() -> str:
     (souvent : 'claude /login' a expire). On ne laisse jamais un cerveau casse passer
     pour un matin tranquille."""
     return "\n".join([
-        "🧠⚠️ <b>THE WIRE — ANALYSE MUETTE</b>",
+        "🧠⚠️ <b>THE WIRE - ANALYSE MUETTE</b>",
         "<i>La collecte a trouve du grain ce matin, mais l'analyse n'a produit aucun radar.</i>",
         "━━━━━━━━━━━━━━━",
         "",
@@ -507,7 +507,7 @@ def format_envoi_echoue() -> str:
     elle echouera aussi silencieusement (loggue par l'appelant), mais c'est le
     seul canal dont on dispose."""
     return "\n".join([
-        "📡⚠️ <b>THE WIRE — ENVOI ECHOUE</b>",
+        "📡⚠️ <b>THE WIRE - ENVOI ECHOUE</b>",
         "<i>Le radar du jour a ete produit et valide, mais l'envoi Telegram a echoue.</i>",
         "━━━━━━━━━━━━━━━",
         "",
@@ -569,12 +569,12 @@ def format_jury_nogo() -> str:
     Distinct de l'analyse muette (aucun radar produit) : ici il EXISTE mais il est
     refuse. Comme envoi-echoue, radar.json reste sur disque (pas archive)."""
     return "\n".join([
-        "🧠🚫 <b>THE WIRE — RADAR REJETE PAR LE JURY</b>",
+        "🧠🚫 <b>THE WIRE - RADAR REJETE PAR LE JURY</b>",
         "<i>L'analyse a produit un radar, mais le jury de clarte le refuse encore apres auto-reparation.</i>",
         "━━━━━━━━━━━━━━━",
         "",
         "Ce n'est <b>pas</b> un jour calme : un radar existe, il ne passe pas le controle qualite.",
-        "<b>Cause probable :</b> un defaut de FOND (ex. un move star sans insight — l'auto-reparateur",
+        "<b>Cause probable :</b> un defaut de FOND (ex. un move star sans insight - l'auto-reparateur",
         "raccourcit les textes trop longs, mais n'invente jamais un contenu manquant).",
         "",
         "👉 <code>data/radar.json</code> a ete CONSERVE (pas archive) : regarde",
@@ -586,7 +586,7 @@ def format_jury_nogo() -> str:
 def envoyer_jury_nogo(token: str, chat: str) -> int:
     """Mode --jury-nogo : alerte qu'un radar produit a ete rejete par le jury de
     clarte meme apres auto-reparation (appele par lancer_veille.bat sur NO-GO
-    persistant — jusqu'ici une panne totalement silencieuse, corrige suite au
+    persistant - jusqu'ici une panne totalement silencieuse, corrige suite au
     jury produit de la vague 2B)."""
     ok = send(token, chat, format_jury_nogo())
     print("Alerte jury-nogo envoyee." if ok else "Echec de l'alerte jury-nogo (reseau probablement mort).")
@@ -616,7 +616,7 @@ def main() -> int:
     if mode_incident:
         return envoyer_incident(token, chat)
     if not RADAR.exists():
-        print("Pas de data/radar.json — rien a envoyer (lance d'abord l'analyse).")
+        print("Pas de data/radar.json - rien a envoyer (lance d'abord l'analyse).")
         return 0
     radar = json.loads(RADAR.read_text(encoding="utf-8"))
     # Option : ne RIEN envoyer un jour vide (silence total). Ici on envoie le "rien de neuf".

@@ -9,29 +9,29 @@
       "meta": "~2h · gros gain · cash tout de suite",
       "title": "Gagne ~290€ : ton app BrandPulse peut déjà vendre ce rapport, il manque juste un prix",
       "pourquoi_maintenant": "3 repos ont copié l'idée cette semaine, mais aucun ne facture le rapport. La demande existe, l'offre payante non.",
-      "insight": "Pari : le premier qui affiche un prix rafle les demandes — une page de vente suffit pour tester si ça paie, sans coder.",
+      "insight": "Pari : le premier qui affiche un prix rafle les demandes - une page de vente suffit pour tester si ça paie, sans coder.",
       "do_now": "Ajoute cette ligne sous le titre de brandpulse-app.onrender.com (fichier index.html) : « Rapport complet + plan de correction : 290€, livré en 48h. »",
       "steps": [
         { "t": "Mets un prix sur la page", "how": "Ajoute une ligne sous le titre dans index.html :", "paste": "Score gratuit en 60s. Rapport complet + plan de correction : 290€, livré en 48h.", "done": "le prix est en ligne sur brandpulse-app.onrender.com" },
         { "t": "Ajoute la liste des corrections au rapport (ce qui justifie les 290€)", "how": "Colle dans Claude Code :", "paste": "Dans generate_report.py, ajoute une section « Top 3 corrections pour être cité par l'IA » : pour chaque requête manquante, le manque + une action concrète. Garde mon style actuel.", "done": "report.html affiche 3 corrections sous le score" },
-        { "t": "Cherche 1 premier acheteur (sans code)", "how": "Lance BrandPulse sur 3 marques B2B FR, envoie ce DM à chaque fondateur (remplace [X]) :", "paste": "J'ai checké la visibilité de [X] dans ChatGPT face à vos concurrents — voici le rapport. Le plan de correction, je le fais pour 290€. Ça vous intéresse ?", "done": "3 DMs envoyés · 1 réponse = c'est validé" }
+        { "t": "Cherche 1 premier acheteur (sans code)", "how": "Lance BrandPulse sur 3 marques B2B FR, envoie ce DM à chaque fondateur (remplace [X]) :", "paste": "J'ai checké la visibilité de [X] dans ChatGPT face à vos concurrents - voici le rapport. Le plan de correction, je le fais pour 290€. Ça vous intéresse ?", "done": "3 DMs envoyés · 1 réponse = c'est validé" }
       ],
       "ensuite": "Si 1 client paie une fois → propose-lui le suivi à 79€/mois (l'argent qui revient tout seul, c'est le vrai jackpot).",
-      "aussi_pour": "Le même coup — mesurer puis vendre la correction — sert aussi Claude Eats Tokens."
+      "aussi_pour": "Le même coup - mesurer puis vendre la correction - sert aussi Claude Eats Tokens."
     },
     {
       "rank": "2",
       "projet": "Claude Eats Tokens",
       "ramp": "teal",
       "meta": "quelques jours · bon gain",
-      "title": "3 apps copient la tienne cette semaine — sors la seule qui prévient AVANT de bloquer",
+      "title": "3 apps copient la tienne cette semaine - sors la seule qui prévient AVANT de bloquer",
       "pourquoi_maintenant": "Les 3 copies comptent ce qui est déjà dépensé. Aucune ne prévient quand tu vas atteindre la limite. C'est ce qui manque à tout le monde.",
-      "do_now": "Mets cette phrase en titre de ta PWA : « Sache si tu peux continuer — avant de toucher la limite. »",
+      "do_now": "Mets cette phrase en titre de ta PWA : « Sache si tu peux continuer - avant de toucher la limite. »",
       "steps": [
         { "t": "Comprends comment le leader compte", "how": "Ouvre le README de cctally, note sa formule de coût en 1 phrase.", "paste": "", "done": "tu sais dire en 1 phrase comment cctally calcule, et où il se trompe" },
-        { "t": "Écris ta promesse sur la page", "how": "Ajoute en titre de la PWA :", "paste": "Sache si tu peux continuer — avant de toucher la limite. On prévoit ta fenêtre de 5h, pas juste le passé.", "done": "la promesse est le gros titre de ta PWA" }
+        { "t": "Écris ta promesse sur la page", "how": "Ajoute en titre de la PWA :", "paste": "Sache si tu peux continuer - avant de toucher la limite. On prévoit ta fenêtre de 5h, pas juste le passé.", "done": "la promesse est le gros titre de ta PWA" }
       ],
-      "ensuite": "Une fois la promesse posée, un post LinkedIn te positionne comme « le mec qui mesure le coût de l'IA » — utile pour vendre des audits.",
+      "ensuite": "Une fois la promesse posée, un post LinkedIn te positionne comme « le mec qui mesure le coût de l'IA » - utile pour vendre des audits.",
       "aussi_pour": ""
     },
     {
@@ -39,14 +39,14 @@
       "projet": "Pacto Club",
       "ramp": "coral",
       "meta": "20 min · sans code",
-      "title": "Quelqu'un cherche à louer du matériel DJ sur Reddit — contacte-le, c'est exactement ton client",
+      "title": "Quelqu'un cherche à louer du matériel DJ sur Reddit - contacte-le, c'est exactement ton client",
       "pourquoi_maintenant": "Un post Reddit d'hier : une personne cherche à louer du matériel DJ et ne trouve personne. C'est pile le besoin que Pacto résout.",
-      "do_now": "Réponds au post avec un message simple : « Je monte un service pour ça à Paris, je peux t'aider — c'est quoi ton besoin exact ? »",
+      "do_now": "Réponds au post avec un message simple : « Je monte un service pour ça à Paris, je peux t'aider - c'est quoi ton besoin exact ? »",
       "steps": [
         { "t": "Lis le post en entier", "how": "Ouvre le lien Reddit, repère la ville et le matériel cherché.", "paste": "", "done": "tu sais quoi il cherche et où" },
         { "t": "Contacte la personne", "how": "Réponds ou envoie un message privé :", "paste": "Salut ! Je monte justement un service de prêt de matériel DJ entre passionnés à Paris. C'est quoi ton besoin exact ? Je peux peut-être t'aider tout de suite.", "done": "1 message envoyé" }
       ],
-      "ensuite": "Si la personne répond, tu as ton premier vrai cas d'usage Pacto — note tout ce qu'elle dit, c'est de l'or pour ton produit.",
+      "ensuite": "Si la personne répond, tu as ton premier vrai cas d'usage Pacto - note tout ce qu'elle dit, c'est de l'or pour ton produit.",
       "aussi_pour": ""
     }
   ],

@@ -1,5 +1,5 @@
-/* The Wire — PWA du radar. Vanilla JS, zéro build, zéro dépendance externe.
-   Lit data/radar.json (réel) puis data/radar.demo.json (repli) — ordre dans pwa/config.js.
+/* The Wire - PWA du radar. Vanilla JS, zéro build, zéro dépendance externe.
+   Lit data/radar.json (réel) puis data/radar.demo.json (repli) - ordre dans pwa/config.js.
    Rendu conforme à DESIGN-SPEC.md + pwa/design-system.css (« LE CALIBRE ») :
    readout → verdict/headline → move ★ déplié (stamp, verdict €, do now, GO,
    insight LCD, plan d'exécution) → moves repliés (registre 01/02/03) →
@@ -9,7 +9,7 @@
 
    RÈGLE DURE : ce fichier ne parle JAMAIS au poller réel ni au réseau Telegram.
    Le pipeline "Tes go en cours" est un miroir visuel LOCAL (localStorage) du
-   rituel "go N" réel — aucune requête sortante n'est ajoutée par ce module. */
+   rituel "go N" réel - aucune requête sortante n'est ajoutée par ce module. */
 (function () {
   "use strict";
 
@@ -118,7 +118,7 @@
      Le gain en euros est EXTRAIT du champ title du move star, affiché en chiffre
      géant ; le reste du champ redevient le titre affiché sous le verdict.
      ÉLARGI (contre-audit 2026-07-06, bloquant B1) : l'ancienne regex exigeait
-     "gagne/gain" collé au montant — 5 des 6 titres star réellement produits en
+     "gagne/gain" collé au montant - 5 des 6 titres star réellement produits en
      prod ne matchaient pas, le verdict (pièce maîtresse de la DA) ne s'affichait
      jamais. Désormais : PREMIER montant en € trouvé n'importe où dans le titre,
      suffixe /mois·/an conservé. Anti-invention inchangé : pas de € dans le
@@ -144,7 +144,7 @@
     var html = '<div class="tw-step' + (isDone ? " is-done" : "") + '" data-step="' + idx + '">';
     html += '<div class="tw-step__rail">';
     html += '<button type="button" class="tw-step__num" aria-pressed="' + (isDone ? "true" : "false") +
-            '" aria-label="Étape ' + (idx + 1) + ' — marquer comme faite">' +
+            '" aria-label="Étape ' + (idx + 1) + ' - marquer comme faite">' +
             (isDone ? "✓" : pad(idx + 1)) + '</button>';
     html += '</div><div class="tw-step__body">';
     if (s.t) html += '<div class="tw-step__t">' + esc(s.t) + '</div>';
@@ -204,15 +204,15 @@
 
     var body = "";
     if (m.pourquoi_maintenant) body += '<p class="tw-why">' + esc(m.pourquoi_maintenant) + '</p>';
-    /* Insight : la lecture stratégique (ce que le fait implique) — champ optionnel,
+    /* Insight : la lecture stratégique (ce que le fait implique) - champ optionnel,
        exigé pour le move star par le prompt d'analyse. Tronqué à 160 (spec 2B).
        Rendu en fenêtre LCD inversée (signature n°3 du Calibre). */
     if (m.insight) body += '<p class="tw-insight">' + esc(String(m.insight).slice(0, 160)) + '</p>';
     if (m.do_now) {
-      body += '<div class="tw-donow"><span class="tw-donow__label">👉 Maintenant — le premier euro</span>' +
+      body += '<div class="tw-donow"><span class="tw-donow__label">👉 Maintenant - le premier euro</span>' +
               '<div>' + esc(m.do_now) + '</div></div>';
     }
-    /* Le GO — collé immédiatement après le premier geste (do_now), dans TOUTES
+    /* Le GO - collé immédiatement après le premier geste (do_now), dans TOUTES
        les dépêches (greffe jury). Étoile = plein ; 2..n = filaire (--ghost). */
     if (m.projet) {
       var goNum = isStar ? "1" : String(m.rank || (idx + 1));
@@ -222,7 +222,7 @@
         '<span class="tw-go__cmd">GO&nbsp;' + esc(goNum) + '</span>' +
         '<span class="tw-go__sub">Fable planifie<br />Sonnet exécute</span>' +
       '</button>';
-      /* B2 (contre-audit 2026-07-06) : ce bouton est un APERÇU local — il ne
+      /* B2 (contre-audit 2026-07-06) : ce bouton est un APERÇU local - il ne
          transmet RIEN au vrai poller. La note le dit sans ambiguïté et son
          contraste est monté d'un cran (classe --strong, --text-2). */
       body += '<p class="tw-go__note tw-go__note--strong">Aperçu : ce bouton simule le déroulé. ' +
@@ -255,7 +255,7 @@
   /* ---------- pipeline local "Tes go en cours" ----------
      Miroir visuel du rituel Telegram réel : quand Adam tape GO ici, on ne
      transmet rien nulle part (aucun fetch, aucun accès à data/executer_move.lock,
-     aucune écriture hors localStorage) — on affiche juste, en local, la même
+     aucune écriture hors localStorage) - on affiche juste, en local, la même
      séquence que celle que le vrai pipeline Fable→Sonnet produit une fois
      "go N" envoyé sur Telegram. Persisté pour survivre à un rafraîchissement. */
 
@@ -283,17 +283,17 @@
     var feedHtml;
     if (entry.stage >= 3) {
       feedHtml =
-        '<li class="tw-pipe__line tw-pipe__line--done"><span class="tw-ok" aria-hidden="true">✓</span>Aperçu — le vrai go se lance sur Telegram</li>' +
-        '<li class="tw-pipe__line tw-pipe__line--done"><span class="tw-ok" aria-hidden="true">✓</span>Fable — plan prêt</li>' +
-        '<li class="tw-pipe__line tw-pipe__line--done"><span class="tw-ok" aria-hidden="true">✓</span>Sonnet — étape 1 exécutée : ' + esc(entry.step1 || "") + '</li>';
+        '<li class="tw-pipe__line tw-pipe__line--done"><span class="tw-ok" aria-hidden="true">✓</span>Aperçu - le vrai go se lance sur Telegram</li>' +
+        '<li class="tw-pipe__line tw-pipe__line--done"><span class="tw-ok" aria-hidden="true">✓</span>Fable - plan prêt</li>' +
+        '<li class="tw-pipe__line tw-pipe__line--done"><span class="tw-ok" aria-hidden="true">✓</span>Sonnet - étape 1 exécutée : ' + esc(entry.step1 || "") + '</li>';
     } else {
       feedHtml =
-        '<li class="tw-pipe__line tw-pipe__line--done is-print"><span class="tw-ok" aria-hidden="true">✓</span>Aperçu — le vrai go se lance sur Telegram</li>' +
-        '<li class="tw-pipe__line tw-pipe__line--live is-print" data-fable><span class="tw-pipe__dot" aria-hidden="true"></span>Fable — lit le move et le contexte ' + esc(entry.proj) + '…</li>' +
-        '<li class="tw-pipe__line is-print" data-sonnet>Sonnet — en attente du plan</li>';
+        '<li class="tw-pipe__line tw-pipe__line--done is-print"><span class="tw-ok" aria-hidden="true">✓</span>Aperçu - le vrai go se lance sur Telegram</li>' +
+        '<li class="tw-pipe__line tw-pipe__line--live is-print" data-fable><span class="tw-pipe__dot" aria-hidden="true"></span>Fable - lit le move et le contexte ' + esc(entry.proj) + '…</li>' +
+        '<li class="tw-pipe__line is-print" data-sonnet>Sonnet - en attente du plan</li>';
     }
     var proof = entry.stage >= 3
-      ? '<p class="tw-pipe__proof">TIRÉ ✓ — la preuve (commit, message, euro) clôt le go</p>'
+      ? '<p class="tw-pipe__proof">TIRÉ ✓ - la preuve (commit, message, euro) clôt le go</p>'
       : "";
     return '<article class="tw-pipe" data-gid="' + esc(entry.id) + '">' +
       '<div class="tw-pipe__head">' +
@@ -328,7 +328,7 @@
     btn.classList.remove("tw-go--ghost");
     btn.classList.add("is-sent");
     btn.setAttribute("aria-disabled", "true");
-    /* B2 : jamais "TRANSMIS" — rien ne part d'ici. L'état terminal dit ce
+    /* B2 : jamais "TRANSMIS" - rien ne part d'ici. L'état terminal dit ce
        qu'il est (un aperçu) et rappelle le seul vrai canal de lancement. */
     btn.querySelector(".tw-go__cmd").textContent = "APERÇU ✓";
     btn.querySelector(".tw-go__sub").innerHTML = "LANCE-LE SUR<br />TELEGRAM : GO " + esc(n);
@@ -351,12 +351,12 @@
       if (f) {
         f.classList.remove("tw-pipe__line--live");
         f.classList.add("tw-pipe__line--done");
-        f.innerHTML = '<span class="tw-ok" aria-hidden="true">✓</span>Fable — plan prêt';
+        f.innerHTML = '<span class="tw-ok" aria-hidden="true">✓</span>Fable - plan prêt';
       }
       var s = card.querySelector("[data-sonnet]");
       if (s) {
         s.classList.add("tw-pipe__line--live");
-        s.innerHTML = '<span class="tw-pipe__dot" aria-hidden="true"></span>Sonnet — exécute l’étape 1 : ' + esc(step1 || "");
+        s.innerHTML = '<span class="tw-pipe__dot" aria-hidden="true"></span>Sonnet - exécute l’étape 1 : ' + esc(step1 || "");
       }
       entry.stage = 2;
       var idx = gos.findIndex(function (g) { return g.id === entry.id; });
@@ -434,7 +434,7 @@
       });
     });
 
-    /* Le go (états : envoi 240ms, puis impression du fil 320ms/ligne) — miroir
+    /* Le go (états : envoi 240ms, puis impression du fil 320ms/ligne) - miroir
        visuel local uniquement, voir commentaire au-dessus de triggerGo(). */
     container.querySelectorAll(".tw-go").forEach(function (btn) {
       btn.addEventListener("click", function () { triggerGo(btn); });
@@ -474,7 +474,7 @@
 
     /* Bandeau discret quand le réseau a échoué et qu'on sert la version gardée */
     document.getElementById("banner-zone").innerHTML = opts.fromCache
-      ? '<div class="tw-banner" role="status">Hors ligne — dernière version reçue' +
+      ? '<div class="tw-banner" role="status">Hors ligne - dernière version reçue' +
         (data.date ? " (" + esc(data.date) + ")" : "") + ".</div>"
       : "";
 
@@ -511,8 +511,8 @@
     }
 
     document.getElementById("foot").textContent = isDemo
-      ? "THE WIRE — RADAR QUOTIDIEN · DONNÉES DÉMO · 0 REQUÊTE EXTERNE · 100% OFFLINE · SW V1"
-      : "THE WIRE — RADAR QUOTIDIEN · GÉNÉRÉ CHAQUE MATIN À 10H · 0 REQUÊTE EXTERNE · 100% OFFLINE · SW V1";
+      ? "THE WIRE - RADAR QUOTIDIEN · DONNÉES DÉMO · 0 REQUÊTE EXTERNE · 100% OFFLINE · SW V1"
+      : "THE WIRE - RADAR QUOTIDIEN · GÉNÉRÉ CHAQUE MATIN À 10H · 0 REQUÊTE EXTERNE · 100% OFFLINE · SW V1";
   }
 
   function fail() {

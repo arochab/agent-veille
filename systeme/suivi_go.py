@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-suivi_go.py — SUIVI des "go" de The Wire. Parano, prouve, ZERO invention.
+suivi_go.py - SUIVI des "go" de The Wire. Parano, prouve, ZERO invention.
 
 IDEE : data/go_suivi.json n'est jamais une source de verite, c'est un INDEX DERIVE.
 On le regenere a chaque fois depuis les VRAIES sources :
@@ -10,7 +10,7 @@ On le regenere a chaque fois depuis les VRAIES sources :
   - data/go_confirmations.jsonl -> confirmations directes d'Adam (fait/skip/paye)
   - le VRAI git de chaque projet -> commits DATES posterieurs au lancement
 
-HIERARCHIE DES SOURCES (autorite decroissante — la plus haute gagne toujours) :
+HIERARCHIE DES SOURCES (autorite decroissante - la plus haute gagne toujours) :
   confirmation Adam  >  event feedback  >  commit git date  >  hypothese LLM.
 
 REGLES DURES (anti-hallu, codees, pas juste ecrites) :
@@ -22,7 +22,7 @@ REGLES DURES (anti-hallu, codees, pas juste ecrites) :
      citee). Il ne rentre JAMAIS dans preuves[], seulement dans hypotheses[].
   4. Aucun commit / aucun event -> "lance" (recent), "dormant" (>= 5 jours), puis
      "dormant_archive" (> 21 jours sans la moindre preuve : sort du radar quotidien
-     mais RESTE dans go_suivi.json — jamais de suppression). Rien n'est suppose.
+     mais RESTE dans go_suivi.json - jamais de suppression). Rien n'est suppose.
   5. Toute hypothese LLM dont la "preuve_citee" ne reprend pas un fragment reel d'un
      commit fourni est REJETEE (_preuve_est_reelle).
 
@@ -464,14 +464,14 @@ def _il_y_a(iso: str) -> str:
 
 def _resume_commit(msg: str, max_len: int = 48) -> str:
     """Resume LISIBLE d'un message de commit (ne tronque pas betement au milieu d'un mot).
-    - coupe au premier ' : ' / ' — ' / '(' pour garder la tete de phrase la plus dense ;
+    - coupe au premier ' : ' / ' - ' / '(' pour garder la tete de phrase la plus dense ;
     - sinon coupe a la limite de mot <= max_len, ajoute '...' si on a coupe.
     N'INVENTE rien : c'est le message reel, juste raccourci proprement."""
     m = (msg or "").strip()
     if not m:
         return ""
     # tete de phrase avant un separateur structurant, si elle est deja informative
-    for sep in (" : ", " — ", " - ", " ("):
+    for sep in (" : ", " - ", " - ", " ("):
         i = m.find(sep)
         if 8 <= i <= max_len:
             return m[:i].strip()
@@ -591,8 +591,8 @@ def _fichiers_non_commites(projet_dir: str) -> list:
 def _regrouper_fichiers(fichiers: list) -> str:
     """Rend les fichiers non commites en une phrase lisible, groupee par dossier quand
     il y en a beaucoup, avec la modif la plus recente en horloge relative.
-    Ex peu de fichiers : 'app.py, index.html + compare.html, post AEO/GEO — modifies il y a 3 min'.
-    Ex beaucoup : '3 dans web/, 2 a la racine — modifies il y a 3 min'."""
+    Ex peu de fichiers : 'app.py, index.html + compare.html, post AEO/GEO - modifies il y a 3 min'.
+    Ex beaucoup : '3 dans web/, 2 a la racine - modifies il y a 3 min'."""
     if not fichiers:
         return ""
     # mtime le plus recent du lot -> une seule horloge relative pour tout le groupe
@@ -627,7 +627,7 @@ def _regrouper_fichiers(fichiers: list) -> str:
         morceaux += [f"le dossier {d}" for d in sorted(dossiers_collapses)]
         corps = ", ".join(morceaux)
 
-    suffixe = f" — modifie(s) {horloge}" if horloge else ""
+    suffixe = f" - modifie(s) {horloge}" if horloge else ""
     return corps + suffixe
 
 
@@ -644,7 +644,7 @@ def _troncature_move(do_now: str, max_len: int = 160) -> str:
 
 
 # ------------------------------------------------------------------------------
-# ETAGE 1quater : "Ce que ce go a produit" — steps du plan MAPPES a leur preuve.
+# ETAGE 1quater : "Ce que ce go a produit" - steps du plan MAPPES a leur preuve.
 #   Hierarchie de preuve (la 1re qui matche gagne, on ne monte jamais d'un cran) :
 #     1. COMMIT post-go dont le message matche le step        -> FAIT (systeme, horodate)
 #     2. FICHIER cite par le step, mtime >= date_lancement     -> FAIT (systeme, relu disque)
@@ -880,7 +880,7 @@ def _etape_couverte(etape: str, mots_faits: set) -> bool:
 
 
 # ------------------------------------------------------------------------------
-# Reformulation CLAIRE du "Reste" (do_now) — 100% deterministe, ZERO token.
+# Reformulation CLAIRE du "Reste" (do_now) - 100% deterministe, ZERO token.
 #   On CLARIFIE le do_now existant : on ne lui AJOUTE aucune etape, on n'en
 #   retire aucune, on n'affirme JAMAIS qu'un bout est fait. Le "pourquoi" est
 #   CITE depuis le move (pourquoi_maintenant/meta), jamais genere.
@@ -904,7 +904,7 @@ _RE_GH_FULL = re.compile(
 # repo lisible cite AVANT son (github.com/owner) : 'visual-engine-optimization (github.com/alan-g-friar)'
 _RE_GH_INLINE = re.compile(
     r"([A-Za-z0-9_.-]+)\s*\((?:https?://)?github\.com/([A-Za-z0-9_.-]+)\)", re.I)
-# owner/repo nu (pas d'espace, un seul slash, pas une URL http) — ex 'jamesleoreyes/cc-usage-tracker-tracker'
+# owner/repo nu (pas d'espace, un seul slash, pas une URL http) - ex 'jamesleoreyes/cc-usage-tracker-tracker'
 _RE_OWNER_REPO = re.compile(r"(?<![\w/])([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]{2,})(?![\w/])")
 # toute autre URL http(s)
 _RE_URL = re.compile(r"https?://([A-Za-z0-9.-]+)(?:/\S*)?", re.I)
@@ -972,7 +972,7 @@ def _decouper_do_now(txt: str, max_morceaux: int = 2) -> list:
     """Coupe le do_now en 1-2 etapes sur un separateur d'ACTION, sans reordonner,
     fusionner ni supprimer. Garde tout : le residu au-dela de 2 morceaux est
     rattache au 2e (rien n'est perdu = rien n'est masque)."""
-    seps = (" puis ", " et note ", " note ", " — ", " - ")
+    seps = (" puis ", " et note ", " note ", " - ", " - ")
     reste = txt.strip()
     morceaux = []
     while reste and len(morceaux) < max_morceaux - 1:
@@ -983,10 +983,10 @@ def _decouper_do_now(txt: str, max_morceaux: int = 2) -> list:
                 idx, sep_len = i, len(sep)
         if idx is None:
             break
-        morceaux.append(reste[:idx].strip(" -—,;:"))
-        reste = reste[idx + sep_len:].strip(" -—,;:")
+        morceaux.append(reste[:idx].strip(" --,;:"))
+        reste = reste[idx + sep_len:].strip(" --,;:")
     if reste:
-        morceaux.append(reste.strip(" -—,;:"))
+        morceaux.append(reste.strip(" --,;:"))
     return [m for m in morceaux if m]
 
 
@@ -1048,7 +1048,7 @@ def _detail_en_cours(entree: dict) -> str:
         for c in commits[:4]:
             h = _heure_locale(c.get("date", ""))
             resume = _safe_html(_resume_commit(c.get("message", "")))
-            when = f" — {h}" if h else ""
+            when = f" - {h}" if h else ""
             lignes.append(f"  ✓ {resume}{when}")
         if len(commits) > 4:
             lignes.append(f"  <i>+ {len(commits) - 4} autre(s) commit(s)</i>")
@@ -1079,7 +1079,7 @@ def _detail_en_cours(entree: dict) -> str:
                     if a["source"] == "commit":
                         tag = f"✔ {_safe_html(a['preuve'])}"
                     else:
-                        tag = f"✔ {_safe_html(a['preuve'])} — fichier présent"
+                        tag = f"✔ {_safe_html(a['preuve'])} - fichier présent"
                     lignes.append(f"  ✓ {titre}  ·  {tag}")
                 else:   # source == digest : action externe, JAMAIS un fait systeme -> cite
                     detail = _safe_html(_troncature_move(a["preuve"] or a["titre"], 70))
@@ -1092,7 +1092,7 @@ def _detail_en_cours(entree: dict) -> str:
 
     # OBSERVE du digest : ce que Claude Code a AUDITE sans produire de fichier. TOUJOURS
     # cite comme temoignage ("d'apres Claude Code"), JAMAIS promu en fait systeme (pas de
-    # coche ✓, pas de preuve dure) — c'est justement une etape sans artefact. Rendu meme
+    # coche ✓, pas de preuve dure) - c'est justement une etape sans artefact. Rendu meme
     # sans steps mappes, car il ne depend d'aucun appariement de plan.
     if digest:
         for o in digest.get("observe", [])[:3]:
@@ -1112,7 +1112,7 @@ def _detail_en_cours(entree: dict) -> str:
                 lignes.append(f"  🔗 {_safe_html(_troncature_move(cible, 80))}")
         if digest.get("note"):
             note = _safe_html(_troncature_move(digest["note"], 140))
-            lignes.append(f"  <i>— Note (Claude Code) : {note}</i>")
+            lignes.append(f"  <i>- Note (Claude Code) : {note}</i>")
 
     # --- RESTE : on CLARIFIE le do_now (jamais on ne juge l'avancement). On NE repete
     #     PAS une etape deja prouvee faite ci-dessus (do_now vidé de ces bribes si besoin).
@@ -1133,7 +1133,7 @@ def _detail_en_cours(entree: dict) -> str:
             for m in morceaux:
                 txt = _safe_html(m)
                 if m.startswith("pourquoi : "):
-                    lignes.append(f"     <i>— {txt}</i>")
+                    lignes.append(f"     <i>- {txt}</i>")
                 elif len(etapes) > 1:
                     lignes.append(f"     • {txt}")
                 else:
@@ -1153,7 +1153,7 @@ def _detail_en_cours(entree: dict) -> str:
 
 
 # ------------------------------------------------------------------------------
-# Decision du statut (hierarchie stricte) — ETAGES 0 et 1, ZERO token
+# Decision du statut (hierarchie stricte) - ETAGES 0 et 1, ZERO token
 # ------------------------------------------------------------------------------
 
 STATUTS = ("lance", "en_cours", "projet_bouge", "probablement_fait",
@@ -1232,7 +1232,7 @@ def _decider(entree: dict) -> dict:
             # ni event, ni commit, ni travail en cours) -> le go sort de l'affichage
             # quotidien (c'est du bruit) mais reste ENTIER dans go_suivi.json et est
             # compte dans le statut complet. Fait dur (dates reelles comparees), pas
-            # une supposition — et JAMAIS une suppression de donnees.
+            # une supposition - et JAMAIS une suppression de donnees.
             statut = "dormant_archive"
         elif _jours_depuis(date_lancement) >= JOURS_DORMANT:
             statut = "dormant"    # >=5j sans le moindre mouvement = fait dur, pas une supposition
@@ -1507,7 +1507,7 @@ _ORDRE_ACTION = {"dormant": 0, "en_cours": 1, "projet_bouge": 2, "probablement_f
 def _go_affichage(snap: dict) -> list:
     """Go a montrer, tries par urgence d'action (ce qui demande une decision d'abord).
     Les 'skip' sont exclus de l'affichage courant ; les 'dormant_archive' aussi
-    (> 21j sans preuve = bruit au quotidien) — ils restent ENTIERS dans le snapshot
+    (> 21j sans preuve = bruit au quotidien) - ils restent ENTIERS dans le snapshot
     et sont COMPTES par une ligne dediee du statut complet, jamais supprimes."""
     go = [g for g in snap.get("go", []) if g["statut"] not in ("skip", "dormant_archive")]
     go.sort(key=lambda g: _ORDRE_ACTION.get(g["statut"], 9))
@@ -1585,31 +1585,31 @@ def _insight(g: dict, num: int) -> str:
     # en francais correct, cette section ne doit pas rompre le ton chaque matin.
     if s == "paye":
         m = f" ({g['montant']})" if g.get("montant") else ""
-        return f"💶 {tete} — <b>a payé{m}</b>. Tu l'as confirmé. Ce type de move rapporte : refais-en."
+        return f"💶 {tete} - <b>a payé{m}</b>. Tu l'as confirmé. Ce type de move rapporte : refais-en."
     if s == "fait":
         pr = _preuve_citee(g)
         pr = f" <i>[{pr}]</i>" if pr else ""
-        return f"✅ {tete} — <b>fait</b>, shippé.{pr} À monétiser si ce n'est pas déjà le cas."
+        return f"✅ {tete} - <b>fait</b>, shippé.{pr} À monétiser si ce n'est pas déjà le cas."
     if s == "probablement_fait":
         h = next((x for x in reversed(g.get("hypotheses", [])) if x.get("verdict") == "probablement_fait"), {})
         pr = h.get("preuve_citee", "")
-        return (f"🟡 {tete} — <b>probablement fait</b> (hypothèse, {int(g.get('confiance',0)*100)}%). "
+        return (f"🟡 {tete} - <b>probablement fait</b> (hypothèse, {int(g.get('confiance',0)*100)}%). "
                 f"Indice : « {_safe_html(pr)[:50]} ». Confirme avec « fait {num} » si c'est bon.")
     if s == "en_cours":
         # Pas d'impératif « dis fait N » ici : la consigne vit UNE fois en pied de
-        # section (radar) ou dans le pied de « statut » — la répéter sur chaque
+        # section (radar) ou dans le pied de « statut » - la répéter sur chaque
         # ligne sonnait robotique (audit GTM, point 6).
-        return (f"🛠️ {tete} — <b>tu bosses dessus</b>, lancé {_quand(g)}. "
+        return (f"🛠️ {tete} - <b>tu bosses dessus</b>, lancé {_quand(g)}. "
                 f"Pas encore de commit figé.")
     if s == "projet_bouge":
         n_c = int(g.get("commits_depuis_go", 0) or 0)
         commits = f"{n_c} commit" + ("s" if n_c > 1 else "")
-        return (f"🔨 {tete} — <b>ça avance</b>, lancé {_quand(g)}, le projet bouge "
+        return (f"🔨 {tete} - <b>ça avance</b>, lancé {_quand(g)}, le projet bouge "
                 f"({commits}) mais rien qui prouve ce move précis.")
     if s == "dormant":
-        return (f"💤 {tete} — <b>dormant</b> : lancé {_quand(g)}, zéro mouvement depuis. "
+        return (f"💤 {tete} - <b>dormant</b> : lancé {_quand(g)}, zéro mouvement depuis. "
                 f"À relancer, ou classe-le avec « skip {num} ».")
-    return f"🚀 {tete} — <b>lancé {_quand(g)}</b>, encore aucun signe. Normal si c'est frais."
+    return f"🚀 {tete} - <b>lancé {_quand(g)}</b>, encore aucun signe. Normal si c'est frais."
 
 
 def _safe_html(s: str) -> str:
@@ -1664,7 +1664,7 @@ def formater_section_radar(max_go: int = 4) -> str:
     if reste > 0:
         L.append(f"<i>+ {reste} autre(s).</i>")
     # UNE seule ligne de commandes pour toute la section (les lignes de go ne
-    # repetent plus chacune leur imperatif — audit GTM : moins robotique, et le
+    # repetent plus chacune leur imperatif - audit GTM : moins robotique, et le
     # geste attendu reste visible exactement une fois).
     L.append("<i>↩️ « fait N » quand c'est shippé · « statut » pour le détail</i>")
     return "\n".join(L)
@@ -1673,7 +1673,7 @@ def formater_section_radar(max_go: int = 4) -> str:
 def formater_statut_complet() -> str:
     """Detail complet pour la commande Telegram 'statut' (HTML). Pied honnete si rien.
     Les go archives (dormant_archive, > 21j sans preuve) ne sont plus detailles ligne
-    a ligne : une ligne dediee les COMPTE — ils restent entiers dans go_suivi.json,
+    a ligne : une ligne dediee les COMPTE - ils restent entiers dans go_suivi.json,
     l'archivage n'est JAMAIS une suppression."""
     snap = rafraichir()
     go = _go_affichage(snap)
@@ -1681,7 +1681,7 @@ def formater_statut_complet() -> str:
     if not go and not archives:
         return ("📌 <b>Suivi des go</b>\n\n"
                 "<i>Aucun go en cours. Reponds « go N » a un radar pour en lancer un.</i>")
-    L = ["📌 <b>Suivi de tes go</b> — <i>prouve, sans invention</i>", "━━━━━━━━━━━━━━━"]
+    L = ["📌 <b>Suivi de tes go</b> - <i>prouve, sans invention</i>", "━━━━━━━━━━━━━━━"]
     if not go:
         L.append("")
         L.append("<i>Aucun go actif. Reponds « go N » a un radar pour en lancer un.</i>")
@@ -1692,10 +1692,10 @@ def formater_statut_complet() -> str:
         if detail:
             L.append(detail)
     # Ligne dediee aux archives : un COMPTE, pas un detail (le detail reste lisible
-    # dans go_suivi.json — rien n'est supprime, c'est juste sorti du bruit quotidien).
+    # dans go_suivi.json - rien n'est supprime, c'est juste sorti du bruit quotidien).
     if archives:
         L.append("")
-        L.append(f"🗄 <i>{len(archives)} go archivé(s) (&gt;21j sans preuve) — "
+        L.append(f"🗄 <i>{len(archives)} go archivé(s) (&gt;21j sans preuve) - "
                  f"conservé(s) dans go_suivi.json, rien n'est supprimé.</i>")
     L.append("")
     L.append("<i>Confirme quand tu veux : « fait N », « paye N &lt;montant&gt; », « skip N ».</i>")

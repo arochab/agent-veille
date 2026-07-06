@@ -3,7 +3,7 @@
    radar est donc toujours frais ; hors-ligne UNIQUEMENT, on ressert la dernière
    version en cache (mieux qu'un écran cassé — la date affichée dit son âge).
    Purge tout cache != version courante à l'activation. Calqué sur Claude Eats Tokens. */
-const CACHE = "veille-v4"; // v4 : Calibre + emojis-lexique + couleurs projet reactivees (retour client 2026-07-06)
+const CACHE = "veille-v5"; // v5 : em dash (—) remplaces par tirets simples dans le contenu affiche (anti-effet IA)
 const ASSETS = [
   "./", "./index.html",
   "./pwa/app.js", "./pwa/config.js", "./pwa/design-system.css",
