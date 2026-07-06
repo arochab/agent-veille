@@ -87,6 +87,11 @@ if exist "data\radar.json" (
     REM QUE si l'envoi a reussi. Sinon le radar reste sur disque pour un prochain essai,
     REM et une alerte part -> un echec d'envoi ne doit JAMAIS ressembler a un jour calme.
     if "!RC_ENVOI!"=="0" (
+      REM HUB Second Cerveau : emet le radar vers le hub AVANT l'archivage (radar.json
+      REM existe encore). Optionnel et non bloquant : si le module ou le repo hub
+      REM manquent, hub_radar ne fait rien et le run continue normalement.
+      %PYEXE% systeme\hub_radar.py >> "%LOG%" 2>&1
+      echo [%NOW%] radar emis vers le hub ^(hub_radar^)>> "%LOG%"
       REM Archive le radar date + libere radar.json (anti re-spam, anti double-comptage).
       %PYEXE% systeme\feedback.py --archive >> "%LOG%" 2>&1
       echo [%NOW%] radar archive ^(feedback.py --archive^)>> "%LOG%"

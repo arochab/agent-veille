@@ -1043,6 +1043,15 @@ def main() -> int:
             return 0
 
         log("Mode --watch : poller demarre (Ctrl+C pour arreter).")
+        # Le poller est BI-SOURCE : Telegram (getUpdates) ET le hub Second Cerveau
+        # (fichiers d'action deposes par la PWA). Meme pipeline de go pour les deux ;
+        # go_traites.json dedoublonne entre les deux sources. Le hub est optionnel :
+        # si son repo n'existe pas encore, traiter_actions_hub renvoie 0 en silence.
+        try:
+            from hub_actions import traiter_actions_hub
+        except Exception as e:
+            log("hub_actions indisponible (hub desactive): " + repr(e))
+            traiter_actions_hub = None
         while True:
             try:
                 un_passage(token, chat)
@@ -1051,6 +1060,17 @@ def main() -> int:
             except Exception as e:
                 log("boucle : erreur non fatale : " + repr(e))
                 time.sleep(5)  # backoff court, on ne tue pas le poller
+            if traiter_actions_hub is not None:
+                try:
+                    # mid_move : MEME calcul d'id qu'a la ligne de traiter_go
+                    # (move._id sinon 'projet-title' normalise) -> un go clique dans
+                    # la PWA a exactement la meme identite qu'un go tape sur Telegram.
+                    def mid_move(m):
+                        return m.get("_id") or f"{_norm(m.get('projet',''))}-{_norm(m.get('title',''))}"
+                    traiter_actions_hub(token, chat, traiter_go,
+                                        dernier_radar, moves_ordonnes, radar_date, mid_move)
+                except Exception as e:
+                    log("boucle hub : erreur non fatale : " + repr(e))
             time.sleep(WATCH_SLEEP)
     except KeyboardInterrupt:
         log("Arret demande (Ctrl+C).")
