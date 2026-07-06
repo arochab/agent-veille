@@ -4,7 +4,7 @@
    pour une main, un matin, 20 secondes. Dark-only, assumé (voir manifeste
    da-explorations/direction-a.html - source de vérité visuelle).
 
-   Vanilla CSS. Zéro framework, zéro font externe, zéro CDN → 100% offline.
+   Vanilla CSS. Zéro framework, zéro font externe, zéro CDN -> 100% offline.
    Fontes SYSTÈME uniquement :
      --mono : ui-monospace (Cascadia Mono / SF Mono / Menlo / Consolas)
      --sans : system-ui / Segoe UI Variable / Segoe UI / Roboto
@@ -136,7 +136,7 @@
 }
 
 /* ==========================================================================
-   2. MAPPING RAMP → variables locales
+   2. MAPPING RAMP -> variables locales
    Poser data-ramp="<couleur>" sur .tw-move suffit : les composants en
    dessous consomment --ramp-text / --ramp-bg / --ramp-solid sans connaître
    la couleur. Neutralisé visuellement (voir §1) : sert seulement le chip.

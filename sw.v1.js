@@ -1,7 +1,7 @@
-/* Service worker — Veille PWA.
+/* Service worker - Veille PWA.
    Network-first PARTOUT : app-shell ET données (data/radar*.json). En ligne, le
    radar est donc toujours frais ; hors-ligne UNIQUEMENT, on ressert la dernière
-   version en cache (mieux qu'un écran cassé — la date affichée dit son âge).
+   version en cache (mieux qu'un écran cassé - la date affichée dit son âge).
    Purge tout cache != version courante à l'activation. Calqué sur Claude Eats Tokens. */
 const CACHE = "veille-v6"; // v6 : go_suivi.json/projets.json passent en network-first (etat reel des go)
 const ASSETS = [
@@ -10,7 +10,7 @@ const ASSETS = [
   "./pwa/manifest.json", "./pwa/icon-192.png", "./pwa/icon-512.png",
   "./assets/the-wire-logo.png",
   // radar.demo.json est précaché : hors-ligne au premier lancement, la démo
-  // s'affiche quand même (le fetch réseau reste prioritaire — jamais périmé en ligne).
+  // s'affiche quand même (le fetch réseau reste prioritaire - jamais périmé en ligne).
   "./data/radar.demo.json"
 ];
 

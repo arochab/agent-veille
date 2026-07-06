@@ -1,10 +1,10 @@
 /* The Wire - PWA du radar. Vanilla JS, zéro build, zéro dépendance externe.
    Lit data/radar.json (réel) puis data/radar.demo.json (repli) - ordre dans pwa/config.js.
    Rendu conforme à DESIGN-SPEC.md + pwa/design-system.css (« LE CALIBRE ») :
-   readout → verdict/headline → move ★ déplié (stamp, verdict €, do now, GO,
-   insight LCD, plan d'exécution) → moves repliés (registre 01/02/03) →
-   tes go - état réel (lu de go_suivi.json) → aperçus locaux (conditionnel) →
-   skill → footer.
+   readout -> verdict/headline -> move ★ déplié (stamp, verdict €, do now, GO,
+   insight LCD, plan d'exécution) -> moves repliés (registre 01/02/03) ->
+   tes go - état réel (lu de go_suivi.json) -> aperçus locaux (conditionnel) ->
+   skill -> footer.
    États : squelettes au chargement, jour calme élégant, erreur factuelle,
    bandeau hors-ligne (dernière version gardée en localStorage), badge démo.
 
@@ -20,7 +20,7 @@
   "use strict";
 
   var DEMO_SOURCE = "data/radar.demo.json";
-  var CACHE_KEY = "twRadarCache";   // dernière version reçue → repli hors-ligne
+  var CACHE_KEY = "twRadarCache";   // dernière version reçue -> repli hors-ligne
   var DONE_PREFIX = "twDone:";      // étapes cochées, une clé par date de radar
   var GOS_KEY = "twGosPipeline";    // pipeline local des go déclenchés depuis ce PWA
   var RAMPS = { blue: 1, teal: 1, purple: 1, coral: 1, amber: 1, gray: 1 };
@@ -179,7 +179,7 @@
      prod ne matchaient pas, le verdict (pièce maîtresse de la DA) ne s'affichait
      jamais. Désormais : PREMIER montant en € trouvé n'importe où dans le titre,
      suffixe /mois·/an conservé. Anti-invention inchangé : pas de € dans le
-     titre → pas de verdict, jamais de valeur inventée. */
+     titre -> pas de verdict, jamais de valeur inventée. */
   function extractVerdict(title) {
     var t = String(title || "");
     var m = /(?:(?:gagne|gain|rapporte|encaisse)\s+)?~?\s*([\d][\d\s.,]*)\s*€\s*(\/\s*(?:mois|an|semaine|jour))?/i.exec(t);
@@ -320,7 +320,7 @@
      Miroir visuel du rituel Telegram réel : quand Adam tape GO ici, on ne
      transmet rien nulle part (aucun fetch, aucun accès à data/executer_move.lock,
      aucune écriture hors localStorage) - on affiche juste, en local et AU
-     CONDITIONNEL, la séquence que le vrai pipeline Fable→Sonnet produirait une
+     CONDITIONNEL, la séquence que le vrai pipeline Fable->Sonnet produirait une
      fois "go N" envoyé sur Telegram. Persisté pour survivre à un rafraîchissement.
      Jamais d'accompli simulé à l'indicatif (contre-audit 2026-07-06, B2) :
      aucun état "fait"/"tiré" n'est atteignable ici, seulement plan/exécution
@@ -356,7 +356,7 @@
     } else {
       feedHtml =
         '<li class="tw-pipe__line tw-pipe__line--done is-print"><span class="tw-ok" aria-hidden="true">✓</span>Aperçu - le vrai go se lance sur Telegram</li>' +
-        '<li class="tw-pipe__line tw-pipe__line--live is-print" data-fable><span class="tw-pipe__dot" aria-hidden="true"></span>Fable poserait le plan pour ' + esc(entry.proj) + '…</li>' +
+        '<li class="tw-pipe__line tw-pipe__line--live is-print" data-fable><span class="tw-pipe__dot" aria-hidden="true"></span>Fable poserait le plan pour ' + esc(entry.proj) + '...</li>' +
         '<li class="tw-pipe__line is-print" data-sonnet>Sonnet, ensuite - en attente du plan</li>';
     }
     return '<article class="tw-pipe" data-gid="' + esc(entry.id) + '">' +
@@ -573,7 +573,7 @@
       });
     });
 
-    /* Étapes cochables → barre de progression du move */
+    /* Étapes cochables -> barre de progression du move */
     container.querySelectorAll(".tw-step__num").forEach(function (btn) {
       btn.addEventListener("click", function () {
         var step = btn.closest(".tw-step");
@@ -671,7 +671,7 @@
       }).join("") + '</div>';
       wireInteractions(main, data);
       /* La démo ne doit JAMAIS purger les étapes cochées du vrai radar du jour
-         (sa date diffère → pruneDone effacerait les clés du jour réel). */
+         (sa date diffère -> pruneDone effacerait les clés du jour réel). */
       if (!isDemo) pruneDone(data);
     }
 

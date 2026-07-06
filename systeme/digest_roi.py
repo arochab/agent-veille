@@ -171,7 +171,7 @@ def _couper_mot(texte: str, max_len: int = 200) -> str:
     esp = coupe.rfind(" ")
     if esp >= 20:
         coupe = coupe[:esp]
-    return coupe.rstrip(" ,;:-") + "…"
+    return coupe.rstrip(" ,;:-") + "..."
 
 
 def _jours_go_vers_preuve(g: dict, statut_cible: str) -> float:
@@ -367,7 +367,7 @@ def formater_digest(jours: int = JOURS_FENETRE) -> str:
         pluriel = "s" if d["nb_lances"] > 1 else ""
         L.append(f"🚀 <b>{d['nb_lances']}</b> go lancé{pluriel} cette semaine - " + " · ".join(seg) + ".")
     else:
-        L.append(f"🚀 <b>{d['nb_lances']}</b> go lancé(s) → dont :")
+        L.append(f"🚀 <b>{d['nb_lances']}</b> go lancé(s) -> dont :")
         L.append(f"   ✅ {nb_fait_non_paye} shippé(s) (pas encore payé confirmé)")
         if d["nb_paye"] > 0:
             L.append(f"   💶 {d['nb_paye']} payé(s)" + (f" - <b>{montant_str} confirmés</b>" if montant_str else ""))
@@ -382,7 +382,7 @@ def formater_digest(jours: int = JOURS_FENETRE) -> str:
     # TENUE A L'ECHELLE : chaque section est plafonnee (top MAX_DETAIL_PAR_SECTION) -
     # payes tries par montant decroissant (le tri relit le champ 'montant' de confiance
     # via _extraire_montant_euros, fonction INCHANGEE), en cours par commits
-    # decroissants, dormants dans l'ordre. Le surplus = une ligne "… et K autres".
+    # decroissants, dormants dans l'ordre. Le surplus = une ligne "... et K autres".
     if d["payes_detail"]:
         tetes, k = _plafonner(d["payes_detail"],
                               tri=lambda p: _extraire_montant_euros(p["montant"]))
@@ -391,7 +391,7 @@ def formater_digest(jours: int = JOURS_FENETRE) -> str:
         for p in tetes:
             L.append(f"   · {esc(p['projet'])} - {esc(p['montant']) or '(montant non chiffré)'}")
         if k:
-            L.append(f"   <i>… et {k} autre(s)</i>")
+            L.append(f"   <i>... et {k} autre(s)</i>")
     if d["en_cours_detail"]:
         tetes, k = _plafonner(d["en_cours_detail"], tri=lambda e: e["commits"])
         L.append("")
@@ -401,7 +401,7 @@ def formater_digest(jours: int = JOURS_FENETRE) -> str:
             trace = (f"{n_c} commit" + ("s" if n_c > 1 else "")) if n_c else "pas encore de trace"
             L.append(f"   · {esc(e['projet'])} - {trace}")
         if k:
-            L.append(f"   <i>… et {k} autre(s)</i>")
+            L.append(f"   <i>... et {k} autre(s)</i>")
     if d["dormants_detail"]:
         tetes, k = _plafonner(d["dormants_detail"])
         L.append("")
@@ -409,7 +409,7 @@ def formater_digest(jours: int = JOURS_FENETRE) -> str:
         for dm in tetes:
             L.append(f"   · {esc(dm['projet'])}")
         if k:
-            L.append(f"   <i>… et {k} autre(s)</i>")
+            L.append(f"   <i>... et {k} autre(s)</i>")
 
     # Cash-close (point 4) : le go le plus avance cite SON PROPRE do_now (deja
     # ecrit par le radar) comme prochain pas - rien d'invente ici. esc() car
@@ -434,9 +434,9 @@ def formater_digest(jours: int = JOURS_FENETRE) -> str:
     ttc = d.get("time_to_cash") or {}
     morceaux_ttc = []
     if ttc.get("mediane_jours_fait") is not None:
-        morceaux_ttc.append(f"go → fait : {ttc['mediane_jours_fait']:.1f}j (médiane, n={ttc['n_fait']})")
+        morceaux_ttc.append(f"go -> fait : {ttc['mediane_jours_fait']:.1f}j (médiane, n={ttc['n_fait']})")
     if ttc.get("mediane_jours_paye") is not None:
-        morceaux_ttc.append(f"go → payé : {ttc['mediane_jours_paye']:.1f}j (médiane, n={ttc['n_paye']})")
+        morceaux_ttc.append(f"go -> payé : {ttc['mediane_jours_paye']:.1f}j (médiane, n={ttc['n_paye']})")
     if morceaux_ttc:
         L.append("")
         L.append(f"⏱ <b>Time-to-cash</b> - {' · '.join(morceaux_ttc)}")

@@ -19,7 +19,7 @@ un signal.
 - `data/_pour_analyse.json` - les signaux frais du jour, déjà triés par score (champ `s`, 0-100). Le mieux scoré d'abord.
 - `data/atelier.json` - les projets d'Adam. Chaque projet porte `avancement_recent` (ses derniers commits = ce qu'il a fait), `resume`, `derniere_activite`.
 
-Si `_pour_analyse.json` est vide ou absent → écris un radar vide : `{"date":"<aujourd'hui>","headline":"","moves":[],"skill_up":"","stats":{"fresh":0,"cut":0,"demo":false}}`. Ne meuble jamais.
+Si `_pour_analyse.json` est vide ou absent -> écris un radar vide : `{"date":"<aujourd'hui>","headline":"","moves":[],"skill_up":"","stats":{"fresh":0,"cut":0,"demo":false}}`. Ne meuble jamais.
 
 ## La barre d'un move : une FENÊTRE, pas une news
 Un move n'est PAS une news reformulée ("X a sorti Y, regarde" = poubelle). C'est une
@@ -38,7 +38,7 @@ réponds pour toi-même à 3 questions - si une réponse manque, jette le move :
    page qui vend, répondre au prospect nommé dans le signal, envoyer l'offre) - jamais
    une action de confort (lire, ranger, "regarder la vidéo") si un pas payant existe.
 3. **La répétition** : si ça marche une fois, qu'est-ce qui se répète ou s'automatise ?
-   Mets-le dans `ensuite` ("1 client → offre packagée à N€/mois", "1 script → tourne
+   Mets-le dans `ensuite` ("1 client -> offre packagée à N€/mois", "1 script -> tourne
    chaque semaine sans toi"). Un gain qui ne se répète pas se dit aussi ("one-shot").
 2 moves tranchants valent mieux que 4 tièdes.
 
@@ -67,13 +67,13 @@ TIER1 (peut facturer) : serp-scraper/BrandPulse (visibilité IA/GEO, LIVE), clau
 - `title` : phrase ultra-directe = GAIN concret + projet. **MAX 88 caractères.** Zéro jargon.
   Pour le move **star** : le title porte un CHIFFRE concret (€, heures, volume) dès
   qu'un fait des signaux/atelier le justifie - « Gagne ~290€ » bat « Gagne de l'argent ».
-  Aucun fait chiffrable → pas de chiffre (jamais inventé), mais un gain nommé précis.
+  Aucun fait chiffrable -> pas de chiffre (jamais inventé), mais un gain nommé précis.
 - `pourquoi_maintenant` : UN fait daté du jour (tiré d'un signal réel) et, si la place
   le permet, pourquoi la fenêtre est COURTE. **MAX 190 caractères.**
 - `insight` (optionnel - OBLIGATOIRE pour le move "star") : ce que ce signal révèle que
   les autres n'ont pas encore vu, en UNE phrase dense. **MAX 160 caractères.** Exprimé
   en FAITS (chiffres, dates, actifs réels), jamais en formules vendeuses. Si c'est une
-  hypothèse → commence par « Pari : ». Ce champ n'est PAS filtré par le jury :
+  hypothèse -> commence par « Pari : ». Ce champ n'est PAS filtré par le jury :
   applique-toi seul les mêmes interdits de registre. Ne répète pas `pourquoi_maintenant` :
   `pourquoi_maintenant` = le fait ; `insight` = ce que le fait implique.
 - `do_now` : la 1ère action, prête à faire/coller - le pas le plus court vers le premier
@@ -85,13 +85,13 @@ TIER1 (peut facturer) : serp-scraper/BrandPulse (visibilité IA/GEO, LIVE), clau
 - `ramp` : serp-scraper/BrandPulse=blue, claude-eats-tokens=teal, cuepoint=purple, mixhub=coral, axis=amber, autres=gray.
 - `projet`, `meta` (ex "2h · 300€") : le montant € doit être JUSTIFIABLE par un fait des
   signaux ou de l'atelier (prix affiché quelque part, tarif mentionné par le marché,
-  client existant). Si aucun fait ne justifie un montant → mets l'effort seul ("2h") :
+  client existant). Si aucun fait ne justifie un montant -> mets l'effort seul ("2h") :
   un chiffre inventé est pire que pas de chiffre.
 
 COMPTE les caractères de title/pourquoi_maintenant/do_now AVANT d'écrire. Si ça dépasse, RÉÉCRIS plus court. C'est non négociable : un seul dépassement et le radar est rejeté.
 
 ## Registre
-Français/anglais naturel, sobre, ZÉRO jargon non traduit (wedge/leverage/MRR/churn INTERDITS bruts), ZÉRO phrase creuse ("le créneau est ouvert", "ton angle", "game-changer", "change la donne" INTERDITS). L'avantage d'Adam se MONTRE par un fait ("les 3 clones ont 0 étoile, ton outil est LIVE"), jamais par les mots "ton angle/edge/asymétrie" ou "longueur d'avance" - le jury les bloque. Chaque terme technique se définit en 3-4 mots en passant (ex. "GEO = être cité dans les réponses IA"). Ancrage RÉEL : ne jamais inventer un fichier, un fait, une url. Relier un signal à l'`avancement_recent` d'Adam quand c'est pertinent ("tu viens de finir X → maintenant...").
+Français/anglais naturel, sobre, ZÉRO jargon non traduit (wedge/leverage/MRR/churn INTERDITS bruts), ZÉRO phrase creuse ("le créneau est ouvert", "ton angle", "game-changer", "change la donne" INTERDITS). L'avantage d'Adam se MONTRE par un fait ("les 3 clones ont 0 étoile, ton outil est LIVE"), jamais par les mots "ton angle/edge/asymétrie" ou "longueur d'avance" - le jury les bloque. Chaque terme technique se définit en 3-4 mots en passant (ex. "GEO = être cité dans les réponses IA"). Ancrage RÉEL : ne jamais inventer un fichier, un fait, une url. Relier un signal à l'`avancement_recent` d'Adam quand c'est pertinent ("tu viens de finir X -> maintenant...").
 
 ## Sortie
 Écris UNIQUEMENT le fichier `data/radar.json` avec cette structure :

@@ -51,11 +51,11 @@ ATTENDUS = {
 # Une alteration ici ne coupe RIEN : elle est remontee dans 'alteres_sentinelle'
 # (verifier) et affichee en avertissement (main). Re-signature : --signer.
 SENTINELLES = {
-    "executer_move.py": "fa0a1ed69ecfea510a532f4513ef6434389674d967289be094d6001c881c21d8",
-    "envoyer_telegram.py": "0621369128d4ea099c64d03cad4b5cbf821da79fc187215c7e89cabeff4d5971",
+    "executer_move.py": "63909e15b70cf8e5e1472c602a4d5536e8269a7efb227994d38af433b6a03c13",
+    "envoyer_telegram.py": "ff1798bd531de2e22db3f5532bc7308f27d52371c724c954203c75847578e1ec",
     "collecte_signaux.py": "23aa79b05c1be28e921aa3dd2defbcbb95cfb93d3b8c1ecbf3601dd072693ea0",
-    "suivi_go.py": "2db614c7bc5ad14d54660920d4a684feb56c9d2d81514ea28044f14bed18e110",
-    "digest_roi.py": "fcae985fdb2732c763926088c78e698b7479ee6f9e178b9c53916b25b154e648",
+    "suivi_go.py": "04732bb6c74ce76a6e103726a761e7de7ae91c7975f8ad141da1e28f2f63dcc3",
+    "digest_roi.py": "dbe3a61507cab727d6c3eb423365154f20df87fca56905f7a9d11c010ba15713",
     "atomic_io.py": "c6af95a6d098c0f24ca77ba72b7946e39b620dd4b0ec74b00704328c6137b06c",
     "config_projets.py": "0adcaeaf70e80e3f9c3c70501928755115a2fa31568c4d52b345dbc9ddd25f0d",
 }

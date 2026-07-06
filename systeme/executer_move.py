@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-executer_move.py — Le poller "go N" de The Wire (couche executeur).
+executer_move.py - Le poller "go N" de The Wire (couche executeur).
 
 Adam repond "go 1" (ou "go 2"...) au bot Telegram -> ce module capte le message,
 retrouve le move #N du dernier radar archive (briefs/AAAA-MM-JJ_radar.json), resout
@@ -475,7 +475,7 @@ def construire_move_markdown(move: dict) -> str:
         L.append("")
         L.append("### Plan suggéré")
         for i, s in enumerate(steps, 1):
-            L.append(f"{i}. **{s.get('t','')}**" + (f" — {s['how']}" if s.get('how') else ""))
+            L.append(f"{i}. **{s.get('t','')}**" + (f" - {s['how']}" if s.get('how') else ""))
             if s.get("paste"):
                 L.append(f"   ```")
                 L.append(f"   {s['paste']}")
@@ -559,7 +559,7 @@ def marquer_go_traite(cle: str, move: dict = None, projet_dir: str = "") -> None
 
 
 # ------------------------------------------------------------------------------
-# Planificateur Fable (headless) — ecrit PLAN-GO.md dans le dossier projet AVANT
+# Planificateur Fable (headless) - ecrit PLAN-GO.md dans le dossier projet AVANT
 # d'ouvrir la session interactive Sonnet. Un seul appel, pas de chaine. Si ca
 # echoue (timeout/auth/quota), on ne bloque JAMAIS le go : repli = comportement
 # actuel (session directe avec le move brut).

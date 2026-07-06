@@ -1203,7 +1203,7 @@ def _detail_en_cours(entree: dict) -> str:
         # pas un "Reste" vide trompeur.
         if etapes:
             lignes.append("<b>Reste</b>")
-            lignes.append("  → Il te reste a :")
+            lignes.append("  -> Il te reste a :")
             for m in morceaux:
                 txt = _safe_html(m)
                 if m.startswith("pourquoi : "):

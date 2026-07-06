@@ -16,7 +16,7 @@
         { "t": "Ajoute la liste des corrections au rapport (ce qui justifie les 290€)", "how": "Colle dans Claude Code :", "paste": "Dans generate_report.py, ajoute une section « Top 3 corrections pour être cité par l'IA » : pour chaque requête manquante, le manque + une action concrète. Garde mon style actuel.", "done": "report.html affiche 3 corrections sous le score" },
         { "t": "Cherche 1 premier acheteur (sans code)", "how": "Lance BrandPulse sur 3 marques B2B FR, envoie ce DM à chaque fondateur (remplace [X]) :", "paste": "J'ai checké la visibilité de [X] dans ChatGPT face à vos concurrents - voici le rapport. Le plan de correction, je le fais pour 290€. Ça vous intéresse ?", "done": "3 DMs envoyés · 1 réponse = c'est validé" }
       ],
-      "ensuite": "Si 1 client paie une fois → propose-lui le suivi à 79€/mois (l'argent qui revient tout seul, c'est le vrai jackpot).",
+      "ensuite": "Si 1 client paie une fois -> propose-lui le suivi à 79€/mois (l'argent qui revient tout seul, c'est le vrai jackpot).",
       "aussi_pour": "Le même coup - mesurer puis vendre la correction - sert aussi Claude Eats Tokens."
     },
     {

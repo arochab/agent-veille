@@ -479,7 +479,7 @@ def format_radar(radar: dict, pwa_url: str = "https://arochab.github.io/agent-ve
     # orphelin recopie a la main.
     L.append("")
     L.append("")
-    L.append("↩️ <b>Réponds « go 1 »</b> (ou 2, 3…)")
+    L.append("↩️ <b>Réponds « go 1 »</b> (ou 2, 3...)")
     gain = _gain_du_titre(star_move.get("title", ""))
     delai_min = max(1, round(_PLAN_GO_TIMEOUT_S / 60))
     vise = f" - vise {gain}" if gain else ""
