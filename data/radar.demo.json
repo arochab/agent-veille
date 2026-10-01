@@ -1,55 +1,86 @@
 {
-  "date": "2026-06-30",
-  "headline": "Deux de tes apps se font copier cette semaine, mais personne ne les vend encore. À toi de jouer le premier.",
+  "date": "2026-10-01",
+  "headline": "Transformer une veille en décisions concrètes, à vérifier avant d’agir.",
   "moves": [
     {
       "rank": "star",
-      "projet": "BrandPulse",
+      "projet": "Atelier Horizon (fictif)",
       "ramp": "blue",
-      "meta": "~2h · gros gain · cash tout de suite",
-      "title": "Gagne ~290€ : ton app BrandPulse peut déjà vendre ce rapport, il manque juste un prix",
-      "pourquoi_maintenant": "3 repos ont copié l'idée cette semaine, mais aucun ne facture le rapport. La demande existe, l'offre payante non.",
-      "insight": "Pari : le premier qui affiche un prix rafle les demandes - une page de vente suffit pour tester si ça paie, sans coder.",
-      "do_now": "Ajoute cette ligne sous le titre de brandpulse-app.onrender.com (fichier index.html) : « Rapport complet + plan de correction : 290€, livré en 48h. »",
+      "meta": "Exemple de recommandation · validation humaine",
+      "title": "Vérifier si une demande de réservation peut être simplifiée",
+      "pourquoi_maintenant": "Scénario fictif : une équipe reçoit régulièrement des demandes incomplètes. Le signal a été ajouté manuellement pour cette démonstration.",
+      "insight": "Hypothèse à tester : un formulaire plus clair pourrait limiter les échanges nécessaires. Aucun gain n’a été mesuré.",
+      "do_now": "Préparer trois exemples anonymisés de demandes incomplètes et les faire examiner par la personne responsable des réservations.",
       "steps": [
-        { "t": "Mets un prix sur la page", "how": "Ajoute une ligne sous le titre dans index.html :", "paste": "Score gratuit en 60s. Rapport complet + plan de correction : 290€, livré en 48h.", "done": "le prix est en ligne sur brandpulse-app.onrender.com" },
-        { "t": "Ajoute la liste des corrections au rapport (ce qui justifie les 290€)", "how": "Colle dans Claude Code :", "paste": "Dans generate_report.py, ajoute une section « Top 3 corrections pour être cité par l'IA » : pour chaque requête manquante, le manque + une action concrète. Garde mon style actuel.", "done": "report.html affiche 3 corrections sous le score" },
-        { "t": "Cherche 1 premier acheteur (sans code)", "how": "Lance BrandPulse sur 3 marques B2B FR, envoie ce DM à chaque fondateur (remplace [X]) :", "paste": "J'ai checké la visibilité de [X] dans ChatGPT face à vos concurrents - voici le rapport. Le plan de correction, je le fais pour 290€. Ça vous intéresse ?", "done": "3 DMs envoyés · 1 réponse = c'est validé" }
+        {
+          "t": "Vérifier le problème avec l’équipe",
+          "how": "Demander quelles informations manquent le plus souvent.",
+          "paste": "Quelles informations vous faut-il pour répondre à une demande de réservation dès le premier échange ?",
+          "done": "l’équipe a confirmé les informations nécessaires"
+        },
+        {
+          "t": "Préparer une proposition",
+          "how": "Dessiner un formulaire court avec les champs validés.",
+          "paste": "Créer un prototype de formulaire avec date souhaitée, nombre de personnes, coordonnées et demande particulière. Signaler les champs obligatoires.",
+          "done": "un prototype est prêt à être relu"
+        },
+        {
+          "t": "Faire valider avant de publier",
+          "how": "Tester le formulaire avec quelques exemples fictifs.",
+          "paste": "",
+          "done": "le responsable a validé le parcours et les informations collectées"
+        }
       ],
-      "ensuite": "Si 1 client paie une fois -> propose-lui le suivi à 79€/mois (l'argent qui revient tout seul, c'est le vrai jackpot).",
-      "aussi_pour": "Le même coup - mesurer puis vendre la correction - sert aussi Claude Eats Tokens."
+      "ensuite": "Si le test est concluant, mesurer le nombre d’échanges nécessaires avant et après le changement.",
+      "aussi_pour": "Demandes de devis, inscriptions et prises de rendez-vous."
     },
     {
       "rank": "2",
-      "projet": "Claude Eats Tokens",
+      "projet": "Équipe conseil (fictive)",
       "ramp": "teal",
-      "meta": "quelques jours · bon gain",
-      "title": "3 apps copient la tienne cette semaine - sors la seule qui prévient AVANT de bloquer",
-      "pourquoi_maintenant": "Les 3 copies comptent ce qui est déjà dépensé. Aucune ne prévient quand tu vas atteindre la limite. C'est ce qui manque à tout le monde.",
-      "do_now": "Mets cette phrase en titre de ta PWA : « Sache si tu peux continuer - avant de toucher la limite. »",
+      "meta": "Exemple de veille · sources à contrôler",
+      "title": "Préparer une comparaison avant de changer un outil",
+      "pourquoi_maintenant": "Scénario fictif : une équipe hésite entre deux logiciels. La démonstration montre comment une observation devient une tâche de comparaison.",
+      "do_now": "Définir trois critères avec les futurs utilisateurs avant de comparer les outils.",
       "steps": [
-        { "t": "Comprends comment le leader compte", "how": "Ouvre le README de cctally, note sa formule de coût en 1 phrase.", "paste": "", "done": "tu sais dire en 1 phrase comment cctally calcule, et où il se trompe" },
-        { "t": "Écris ta promesse sur la page", "how": "Ajoute en titre de la PWA :", "paste": "Sache si tu peux continuer - avant de toucher la limite. On prévoit ta fenêtre de 5h, pas juste le passé.", "done": "la promesse est le gros titre de ta PWA" }
+        {
+          "t": "Définir les critères utiles",
+          "how": "Partir des tâches réellement effectuées.",
+          "paste": "Comparer les deux outils sur : reprise des données existantes, facilité d’utilisation et coût total documenté. Pour chaque affirmation, conserver la source et sa date.",
+          "done": "les critères sont approuvés et chaque information a une source"
+        },
+        {
+          "t": "Présenter les limites",
+          "how": "Séparer les faits vérifiés des hypothèses.",
+          "paste": "",
+          "done": "la synthèse indique ce qui reste à vérifier"
+        }
       ],
-      "ensuite": "Une fois la promesse posée, un post LinkedIn te positionne comme « le mec qui mesure le coût de l'IA » - utile pour vendre des audits.",
+      "ensuite": "La décision reste entre les mains de l’équipe. Aucun achat ni changement de logiciel n’est lancé.",
       "aussi_pour": ""
     },
     {
       "rank": "3",
-      "projet": "Pacto Club",
+      "projet": "Studio Rivage (fictif)",
       "ramp": "coral",
-      "meta": "20 min · sans code",
-      "title": "Quelqu'un cherche à louer du matériel DJ sur Reddit - contacte-le, c'est exactement ton client",
-      "pourquoi_maintenant": "Un post Reddit d'hier : une personne cherche à louer du matériel DJ et ne trouve personne. C'est pile le besoin que Pacto résout.",
-      "do_now": "Réponds au post avec un message simple : « Je monte un service pour ça à Paris, je peux t'aider - c'est quoi ton besoin exact ? »",
+      "meta": "Exemple de suivi · résultat observable",
+      "title": "Vérifier si une amélioration du site aide ses visiteurs",
+      "pourquoi_maintenant": "Scénario fictif : une nouvelle page de services est prête, mais son utilité n’a pas encore été testée.",
+      "do_now": "Faire lire la page à trois personnes et leur demander quel service elles pensent pouvoir réserver.",
       "steps": [
-        { "t": "Lis le post en entier", "how": "Ouvre le lien Reddit, repère la ville et le matériel cherché.", "paste": "", "done": "tu sais quoi il cherche et où" },
-        { "t": "Contacte la personne", "how": "Réponds ou envoie un message privé :", "paste": "Salut ! Je monte justement un service de prêt de matériel DJ entre passionnés à Paris. C'est quoi ton besoin exact ? Je peux peut-être t'aider tout de suite.", "done": "1 message envoyé" }
+        {
+          "t": "Recueillir les retours",
+          "how": "Poser la même question à chaque personne sans lui souffler la réponse.",
+          "paste": "Après lecture, quel service propose cette page et comment feriez-vous pour contacter l’entreprise ?",
+          "done": "trois retours sont consignés, sans données personnelles"
+        }
       ],
-      "ensuite": "Si la personne répond, tu as ton premier vrai cas d'usage Pacto - note tout ce qu'elle dit, c'est de l'or pour ton produit.",
+      "ensuite": "Corriger les passages ambigus avant la mise en ligne.",
       "aussi_pour": ""
     }
   ],
-  "skill_up": "Comprendre le GEO (faire en sorte que les IA comme ChatGPT recommandent une marque) en 1h. Ça rend ton pitch BrandPulse plus fort ET ça fait bien sur ton CV.",
-  "stats": { "fresh": 135, "cut": 9, "demo": true }
+  "skill_up": "Ce démonstrateur présente des recommandations préparées à l’avance. Le moteur Python du projet collecte et classe les signaux dans l’installation complète. Ici, aucune collecte, aucun appel IA et aucun message externe ne sont exécutés.",
+  "stats": {
+    "demo": true
+  }
 }

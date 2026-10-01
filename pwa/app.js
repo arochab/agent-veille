@@ -20,9 +20,9 @@
   "use strict";
 
   var DEMO_SOURCE = "data/radar.demo.json";
-  var CACHE_KEY = "twRadarCache";   // dernière version reçue -> repli hors-ligne
-  var DONE_PREFIX = "twDone:";      // étapes cochées, une clé par date de radar
-  var GOS_KEY = "twGosPipeline";    // pipeline local des go déclenchés depuis ce PWA
+  var CACHE_KEY = window.VEILLE_DEMO ? "twDemoRadarCache" : "twRadarCache";   // dernière version reçue -> repli hors-ligne
+  var DONE_PREFIX = window.VEILLE_DEMO ? "twDemoDone:" : "twDone:";      // étapes cochées, une clé par date de radar
+  var GOS_KEY = window.VEILLE_DEMO ? "twDemoGosPipeline" : "twGosPipeline";    // pipeline local des go déclenchés depuis ce PWA
   var RAMPS = { blue: 1, teal: 1, purple: 1, coral: 1, amber: 1, gray: 1 };
   var reducedMotion = false;
   try { reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) {}
@@ -266,12 +266,12 @@
        Rendu en fenêtre LCD inversée (signature n°3 du Calibre). */
     if (m.insight) body += '<p class="tw-insight">' + esc(String(m.insight).slice(0, 160)) + '</p>';
     if (m.do_now) {
-      body += '<div class="tw-donow"><span class="tw-donow__label">👉 Maintenant - le premier euro</span>' +
+      body += '<div class="tw-donow"><span class="tw-donow__label">Première action proposée</span>' +
               '<div>' + esc(m.do_now) + '</div></div>';
     }
     /* Le GO - collé immédiatement après le premier geste (do_now), dans TOUTES
        les dépêches (greffe jury). Étoile = plein ; 2..n = filaire (--ghost). */
-    if (m.projet) {
+    if (m.projet && !window.VEILLE_DEMO) {
       var goNum = isStar ? "1" : String(m.rank || (idx + 1));
       var step1Label = steps.length && steps[0].t ? steps[0].t : (m.do_now || "");
       body += '<button type="button" class="tw-go' + (isStar ? "" : " tw-go--ghost") + '" ' +
@@ -291,6 +291,9 @@
         'aria-label="Copier le texte go ' + esc(goNum) + ', à coller dans Telegram">' +
         '<span class="tw-copygo__hint" aria-hidden="true"></span>Copier «&nbsp;go&nbsp;' + esc(goNum) + '&nbsp;»' +
       '</button>';
+    }
+    if (m.projet && window.VEILLE_DEMO) {
+      body += '<button type="button" class="tw-demo-review" aria-pressed="false">Marquer pour revue (démo)</button><p class="tw-go__note">Vous pouvez explorer le plan et cocher les étapes. Ces interactions restent dans cette démonstration.</p>';
     }
     if (steps.length) {
       body += '<div class="tw-progress" style="--done:' + doneList.length + ';--total:' + steps.length +
@@ -489,7 +492,7 @@
     var gos = loadGos();
     gos.unshift(entry);
     saveGos(gos);
-    renderGosSection();
+    if (!window.VEILLE_DEMO) renderGosSection();
 
     var section = document.getElementById("gos-section");
     var card = section.querySelector('[data-gid="' + entry.id + '"]');
@@ -529,6 +532,14 @@
   /* ---------- interactions ---------- */
 
   function wireInteractions(container, data) {
+    container.querySelectorAll('.tw-demo-review').forEach(function (button) {
+      button.addEventListener('click', function () {
+        var selected = button.getAttribute('aria-pressed') !== 'true';
+        button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+        button.textContent = selected ? 'Ajouté à la revue (démo)' : 'Marquer pour revue (démo)';
+        announce('Démonstration uniquement. Aucune action externe.');
+      });
+    });
     /* Dépliage des moves 2..n (tap ou Entrée/Espace) */
     container.querySelectorAll('.tw-move__head[role="button"]').forEach(function (head) {
       var card = head.closest(".tw-move");
@@ -649,7 +660,9 @@
     statsEl.innerHTML = bits.join("");
 
     /* Bandeau discret quand le réseau a échoué et qu'on sert la version gardée */
-    document.getElementById("banner-zone").innerHTML = opts.fromCache
+    document.getElementById("banner-zone").innerHTML = isDemo
+      ? '<div class="tw-banner" role="status"><strong>Démonstration avec des exemples fictifs.</strong> Les recommandations sont préparées à l’avance. Les boutons créent seulement un aperçu local : aucun message, achat ou déploiement n’est exécuté.</div>'
+      : opts.fromCache
       ? '<div class="tw-banner" role="status">Hors ligne - dernière version reçue' +
         (data.date ? " (" + esc(data.date) + ")" : "") + ".</div>"
       : "";
@@ -675,8 +688,8 @@
       if (!isDemo) pruneDone(data);
     }
 
-    renderGosSection();
-    loadEtatReel();
+    if (!window.VEILLE_DEMO) renderGosSection();
+    if (!isDemo) loadEtatReel();
 
     var skill = document.getElementById("skill");
     if (data.skill_up) {
@@ -688,13 +701,13 @@
     }
 
     document.getElementById("foot").textContent = isDemo
-      ? "THE WIRE - RADAR QUOTIDIEN · DONNÉES DÉMO · 0 REQUÊTE EXTERNE · 100% OFFLINE · SW V1"
+      ? "The Wire · Démonstration fictive · Aucune action externe"
       : "THE WIRE - RADAR QUOTIDIEN · GÉNÉRÉ CHAQUE MATIN À 10H · 0 REQUÊTE EXTERNE · 100% OFFLINE · SW V1";
   }
 
   function fail() {
     /* Réseau muet : on ressert la dernière version gardée, avec bandeau. */
-    var cached = lsGet(CACHE_KEY);
+    var cached = window.VEILLE_DEMO ? null : lsGet(CACHE_KEY);
     if (cached) {
       try {
         render(JSON.parse(cached), { fromCache: true });

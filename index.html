@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>The Wire - radar du matin</title>
+<title>The Wire | De la veille à une action vérifiable</title>
 <!--
   DIRECTION « LE CALIBRE » - dark-only, ASSUMÉ (voir manifeste complet dans
   pwa/design-system.css §0 et la maquette de référence da-explorations/direction-a.html).
@@ -17,7 +17,9 @@
 <link rel="apple-touch-icon" href="pwa/icon-192.png" />
 <!-- Zéro CDN, zéro font externe : tout est local, la PWA vit sans réseau. -->
 <link rel="stylesheet" href="pwa/design-system.css" />
-</head>
+<style id="portfolio-demo-style">
+body.demo .tw-app{max-width:740px}body.demo .tw-banner{display:block;line-height:1.6}body.demo .tw-banner::before{display:none}body.demo .tw-banner strong{display:block;margin-bottom:5px}body.demo .tw-step__done{color:var(--text-2)}body.demo .tw-step__done::before{content:'Critère de validation : ';font-weight:600}.tw-demo-review{width:100%;padding:16px;margin-top:20px;background:#ffca32;color:#101214;border:1px solid #ffca32;font:600 16px Arial,sans-serif;cursor:pointer}.tw-demo-review:focus-visible{outline:3px solid white;outline-offset:4px}.tw-demo-review[aria-pressed="true"]{background:#242a34;color:#e0e6ef}
+</style></head>
 <body>
 <div class="tw-app" id="app">
 
@@ -64,7 +66,7 @@
   </section>
 
   <section class="tw-skill" id="skill" hidden>
-    <div class="tw-skill__label">🎓 Skill up - cette semaine</div>
+    <div class="tw-skill__label">Ce que montre cette démonstration</div>
     <p id="skill-text"></p>
   </section>
 
@@ -76,9 +78,9 @@
 </div>
 
 <script src="pwa/config.js"></script>
-<script src="pwa/app.js"></script>
+<script>if(window.VEILLE_DEMO)document.body.classList.add("demo");</script><script src="pwa/app.js"></script>
 <script>
-if ("serviceWorker" in navigator) {
+if (!window.VEILLE_DEMO && "serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.v1.js").catch(function () {});
 }
 </script>
