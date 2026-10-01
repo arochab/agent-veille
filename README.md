@@ -1,5 +1,13 @@
 # Veille — autonomous project-aware watch system
 
+## Public workspace
+
+[Explore The Wire](https://arochab.github.io/agent-veille/) in English, or [in French](https://arochab.github.io/agent-veille/?lang=fr).
+
+The public interface is a self-contained sample workspace: review observations by project, inspect their context, plan next steps, record notes and export a brief. All sample projects and observations are fictional. Added observations, statuses, notes and checklists stay in the visitor's browser. No model call, collection job, external action or private data request runs in this interface.
+
+The public entry point uses `pwa/workspace.js` and `pwa/workspace.css`. The existing Python collection engine and private-installation UI files are preserved separately. Open `index.html` through a static web server to try the workspace locally.
+
 An agentic intelligence system that scans a portfolio of software projects, hunts
 the web for fresh signals tied to each one, and turns them into **executable daily
 briefs** — what to do, in numbered steps, ranked by gain over effort.
