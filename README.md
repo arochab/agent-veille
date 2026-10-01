@@ -4,9 +4,9 @@
 
 [Explore The Wire](https://arochab.github.io/agent-veille/) in English, or [in French](https://arochab.github.io/agent-veille/?lang=fr).
 
-The public interface is a self-contained sample workspace: review observations by project, inspect their context, plan next steps, record notes and export a brief. All sample projects and observations are fictional. Added observations, statuses, notes and checklists stay in the visitor's browser. No model call, collection job, external action or private data request runs in this interface.
+The public introduction explains the product through an interactive source-to-action brief. Three real documentation pages are linked to illustrative project contexts and prepared recommendations. [Open the workspace](https://arochab.github.io/agent-veille/workspace.html) to inspect the sources, plan next steps, record notes and export a brief. Project contexts and recommendations are fictional; the linked reference pages are real. Added observations, statuses, notes and checklists stay in the visitor's browser. No model call, collection job, external action or private data request runs in this interface.
 
-The public entry point uses `pwa/workspace.js` and `pwa/workspace.css`. The existing Python collection engine and private-installation UI files are preserved separately. Open `index.html` through a static web server to try the workspace locally.
+The public entry uses `pwa/landing.js`, `pwa/landing.css` and shared examples in `pwa/briefs.js`. The workspace uses `pwa/workspace.js`, `pwa/workspace.css` and `pwa/workspace-v3.css`. The Python collection engine and private-installation UI files remain separate. Serve this directory through a static web server to try both pages locally. Visual principles and the reference inspected are documented in `DESIGN.md`.
 
 An agentic intelligence system that scans a portfolio of software projects, hunts
 the web for fresh signals tied to each one, and turns them into **executable daily
